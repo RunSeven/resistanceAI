@@ -3,16 +3,17 @@
 
 from spy_catcher import SpyCatcher19800483
 from random_agent import RandomAgent
+from reflex_agent import ReflexAgent
 
 from game import Game
 
-agents = [RandomAgent(name='r1'),
-          RandomAgent(name='r2'),
-          RandomAgent(name='r3'),
-          RandomAgent(name='r4'),
-          RandomAgent(name='r5'),
-          RandomAgent(name='r6'),
-          SpyCatcher19800483(name='r7')]
+agents = [ReflexAgent(name='r1'),
+          ReflexAgent(name='r2'),
+          ReflexAgent(name='r3'),
+          ReflexAgent(name='r4'),
+          ReflexAgent(name='r5'),
+          ReflexAgent(name='r6'),
+          ReflexAgent(name='r7')]
 
 game = Game(agents)
 game.play()

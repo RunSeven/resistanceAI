@@ -1,6 +1,10 @@
+'''
+Game Classes
+'''
+
 from agent import Agent
-from random_agent import RandomAgent
 import random
+
 
 class Game:
     '''
@@ -10,58 +14,84 @@ class Game:
     to share information and get game actions
     '''
 
-    def __init__(self, agents):
-        '''
-        agents is the list of agents playing the game
-        the list must contain 5-10 agents
-        This method initiaises the game by
-        - shuffling the agents
-        - randomly assigning spies
-        - calling the new_game method on all agents
-        - build a scoreboard and data structures
-        '''
-        if len(agents)<5 or len(agents)>10:
+    # Setup Game Space
+    agents = None
+    num_players = 0
+    spies = list()
+
+    # Initialise Rounds
+    rounds = list()
+    missions_lost = 0
+
+    def __init__(self, agents, randomise=True):
+        '''Setup Game.  If randomise is set to False we will assign
+        particular agents to be spies/resistance'''
+
+        if len(agents) < 5 or len(agents) > 10:
             raise Exception('Agent array out of range')
-        #clone and shuffle agent array
+
+        self._setup_agents(agents)
+        self._allocate_spies(randomise)
+        self._initialise_agents()
+
+    def _setup_agents(self, agents):
+
         self.agents = agents.copy()
         random.shuffle(self.agents)
         self.num_players = len(agents)
-        #allocate spies
-        self.spies = []
-        while len(self.spies) < Agent.spy_count[self.num_players]:
-            spy = random.randrange(self.num_players)
-            if spy not in self.spies:
-                self.spies.append(spy)
-        #start game for each agent        
+
+    def _allocate_spies(self, randomise):
+        '''For testing we may want to assign agents to particular
+        roles.  Randomise will allow us to do this through 
+        information in their name or another var to be added'''
+
+        if randomise:
+
+            while len(self.spies) < Agent.spy_count[self.num_players]:
+                spy = random.randrange(self.num_players)
+                if spy not in self.spies:
+                    self.spies.append(spy)
+
+        else:
+            pass
+
+    def _initialise_agents(self):
+
         for agent_id in range(self.num_players):
             spy_list = self.spies.copy() if agent_id in self.spies else []
-            self.agents[agent_id].new_game(self.num_players,agent_id, spy_list)
-        #initialise rounds
-        self.missions_lost = 0
-        self.rounds = []
-            
-
-    def play(self):
-        leader_id = 0
-        for i in range(5):
-            self.rounds.append(Round(leader_id,self.agents, self.spies, i))
-            if not self.rounds[i].play(): self.missions_lost+= 1
-            for a in self.agents:
-                a.round_outcome(i+1, self.missions_lost)
-            leader_id = (leader_id+len(self.rounds[i].missions)) % len(self.agents)    
-        for a in self.agents:
-            a.game_outcome(self.missions_lost<3, self.spies)
+            self.agents[agent_id].new_game(self.num_players, agent_id, spy_list)
 
     def __str__(self):
         s = 'Game between agents:' + str(self.agents)
         for r in self.rounds:
             s = s + '\n' + str(r)
-        if self.missions_lost<3:
+        if self.missions_lost < 3:
             s = s + '\nThe Resistance succeeded!'
         else:
             s = s + '\nThe Resistance failed!'
         s = s + 'The spies were agents: '+ str(self.spies)    
         return s    
+
+    def play(self):
+        leader_id = 0
+        for i in range(5):
+            self.rounds.append(Round(leader_id, self.agents, self.spies, i))
+
+            if not self.rounds[i].play():
+                self.missions_lost += 1
+
+            for a in self.agents:
+                a.round_outcome(i+1, self.missions_lost)
+
+            leader_id = (leader_id+len(self.rounds[i].missions)) % len(self.agents)
+
+        for a in self.agents:
+            a.game_outcome(self.missions_lost < 3, self.spies)
+
+    def results_to_csv(self):
+        '''Print results info to a CSV that can be analysed later'''
+
+
 
 class Round():
     '''
@@ -85,7 +115,8 @@ class Round():
         '''
         produces a string representation of the round
         '''
-        s = 'Round:' + str(self.rnd)
+        s = '\nRound:' + str(self.rnd)
+        
         for m in self.missions:
             s = s +'\n'+str(m)
         if self.is_successful():

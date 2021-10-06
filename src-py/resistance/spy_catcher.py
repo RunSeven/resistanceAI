@@ -7,8 +7,8 @@ resistance player and determine who spies are.  Effort to include play as a
 spy is minimal
 '''
 
-# TODO - REMOVE THE FULL STOP BEFORE SUBMISSION
-from .agent import Agent
+
+from agent import Agent
 import random
 
 
