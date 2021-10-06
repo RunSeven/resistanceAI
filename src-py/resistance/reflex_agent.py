@@ -75,14 +75,24 @@ class ReflexAgent(Agent):
 
         team = []
         print("RESISTANCE MISSION PROPOSAL")
+        print(self.confirmed_spies)
 
+        proposal_string = ''
         while len(team) < team_size:
 
-            agent = random.randrange(team_size)
+            agent = random.randrange(self.number_of_players)
+            proposal_string += str(agent)
 
             # Don't include burnt agents
             if agent not in team and agent not in self.confirmed_spies:
                 team.append(agent)
+            
+            if len(proposal_string) > 50:
+                print(proposal_string)
+                print("TEAM SIZE", (team_size))
+                print("ACTUAL TEAM", team)
+                print("BURNED AGENTS", self.confirmed_spies)
+                raise Exception("FUNK JUICE")
 
         random.shuffle(team)
         return team
@@ -91,6 +101,7 @@ class ReflexAgent(Agent):
 
         team = []
         print("SPY MISSION PROPOSAL")
+        print(self.confirmed_spies)
 
         # If agent is burnt add self to poison vote
         # otherwise poison with someone randomly
@@ -100,21 +111,29 @@ class ReflexAgent(Agent):
             viable_spies = [spy for spy in self.spies if spy not in self.confirmed_spies]
             team.append(random.choice(viable_spies))
 
+        proposal_string = ''
         while len(team) < team_size:
 
-            agent = random.randrange(team_size)
+            agent = random.randrange(self.number_of_players)
+            proposal_string += str(agent)
 
             # Don't include burnt agents
             if agent not in team and agent not in self.confirmed_spies:
                 team.append(agent)
+            
+            if len(proposal_string) > 50:
+                print(proposal_string)
+                print("TEAM SIZE", (team_size))
+                print("ACTUAL TEAM", len(team))
+                print("BURNED AGENTS", self.confirmed_spies)
+                raise Exception("FUNK JUICE")
+                
 
         random.shuffle(team)
         return team
 
     def vote(self, mission, proposer):
         '''Determine vote based on player model'''
-
-        print("VOTE")
 
         # Accept any vote in the first round
         if self.current_round == 1:
@@ -211,6 +230,7 @@ class ReflexAgent(Agent):
         # If all agents betray the mission they have burned themselves
         if len(mission) == betrayals:
             self.confirmed_spies.extend(mission)
+            self.confirmed_spies = list(set(self.confirmed_spies))
             return
 
         # Update the agent depending on role
@@ -235,6 +255,7 @@ class ReflexAgent(Agent):
         if self.player_number in mission and betrayals == len(mission) - 1:
             known_spies = [spy for spy in mission if spy != self.player_number]
             self.confirmed_spies.extend(known_spies)
+            self.confirmed_spies = list(set(self.confirmed_spies))
 
     def round_outcome(self, rounds_complete, missions_failed):
         '''Update rounds and mission failures'''
