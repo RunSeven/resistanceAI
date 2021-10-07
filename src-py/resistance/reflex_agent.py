@@ -12,8 +12,11 @@ Gameplay:
                 Supports spies in votes more as
 '''
 
-from agent import Agent
+import logging
 import random
+
+from agent import Agent
+
 
 
 class ReflexAgent(Agent):
@@ -29,17 +32,23 @@ class ReflexAgent(Agent):
     spies = None
 
     # Custom Variables
-    spy = False
-    current_round = 1
-    confirmed_spies = list()
+    spy = None
+    current_round = None
+    confirmed_spies = None
 
     # Resistance Member to Frame
-    target_resistance = list()
+    target_resistance = None
 
     def __init__(self, name='Reflex'):
         '''Assign Name and zero missions failed'''
         self.name = name
         self.missions_failed = 0
+
+        self.spy = False
+        self.current_round = 1
+        self.confirmed_spies = list()
+
+        self.target_resistance = list()
 
     def new_game(self, number_of_players, player_number, spies):
         '''New game setup'''
@@ -50,7 +59,7 @@ class ReflexAgent(Agent):
 
         # Set Play Status
         self.spy = self.player_number in spies
-        print("SPY STATUS: ", self.player_number, self.spy)
+        logging.debug("{} IS A SPY {}".format(self.player_number, self.spy))
 
     def is_spy(self):
         '''return spy status'''
@@ -74,9 +83,7 @@ class ReflexAgent(Agent):
     def _resistance_mission_proposal(self, team_size, betrayals_required):
 
         team = []
-        print("RESISTANCE MISSION PROPOSAL")
-        print(self.confirmed_spies)
-
+        
         proposal_string = ''
         while len(team) < team_size:
 
@@ -87,22 +94,13 @@ class ReflexAgent(Agent):
             if agent not in team and agent not in self.confirmed_spies:
                 team.append(agent)
             
-            if len(proposal_string) > 50:
-                print(proposal_string)
-                print("TEAM SIZE", (team_size))
-                print("ACTUAL TEAM", team)
-                print("BURNED AGENTS", self.confirmed_spies)
-                raise Exception("FUNK JUICE")
-
         random.shuffle(team)
         return team
 
     def _spy_mission_proposal(self, team_size, betrayals_required):
 
         team = []
-        print("SPY MISSION PROPOSAL")
-        print(self.confirmed_spies)
-
+        
         # If agent is burnt add self to poison vote
         # otherwise poison with someone randomly
         if self.player_number in self.confirmed_spies:
@@ -120,14 +118,7 @@ class ReflexAgent(Agent):
             # Don't include burnt agents
             if agent not in team and agent not in self.confirmed_spies:
                 team.append(agent)
-            
-            if len(proposal_string) > 50:
-                print(proposal_string)
-                print("TEAM SIZE", (team_size))
-                print("ACTUAL TEAM", len(team))
-                print("BURNED AGENTS", self.confirmed_spies)
-                raise Exception("FUNK JUICE")
-                
+                            
 
         random.shuffle(team)
         return team
@@ -153,32 +144,40 @@ class ReflexAgent(Agent):
         '''Decide on voting if player is a spy'''
 
         # Spies shouldn't vote for burnt assets
-        if not all([player in mission for player in self.confirmed_spies]):
+        if any([player in mission for player in self.confirmed_spies]):
+            self._vote_logging(proposer, mission, "(SPY) VOTING AGAINST BURNT ASSET ")
             return False
 
         # We are trying to frame someone so we should vote against them
         no_targets = all([target in mission for target in self.target_resistance])
         if len(self.target_resistance) != 0 and no_targets:
+            self._vote_logging(proposer, mission, "(SPY) VOTING NO TO FRAME TARGET")
             return False
 
         # No spies in mission
-        if all([team_member not in self.spies for team_member in mission]):
+        if any([team_member not in self.spies for team_member in mission]):
 
             # If we have breathing room then allow it
             if self.current_round - self.missions_failed > 0:
+                self._vote_logging(proposer, mission, "(SPY) VOTING YES FOR NUMBER OF ROUNDS")
                 return True
             else:
+                self._vote_logging(proposer, mission, "(SPY) VOTING NO AGAINST NUMBER OF ROUNDS")
                 return False
 
+        self._vote_logging(proposer, mission, "(SPY) VOTING YES AS NO REASON NOT TO ")
         return True
 
     def _resistance_vote(self, mission, proposer):
         '''Decide on voting if player is resistance'''
 
         # Only vote against a player if we know they are a spy
-        if not all([player in mission for player in self.confirmed_spies]):
+        if any([player in mission for player in self.confirmed_spies]):
+            self._vote_logging(proposer, mission, "(RESISTANCE) VOTING AGAINST KNOWN SPY")
+            logging.debug("PLAYER: {} {}".format(self.player_number, str({player: player in mission for player in self.confirmed_spies})))
             return False
-
+        
+        self._vote_logging(proposer, mission, "(RESISTANCE) VOTING YES AS NO INFORMATION NOT TO")
         return True
 
     def _is_burnt_asset_vote(self):
@@ -186,6 +185,12 @@ class ReflexAgent(Agent):
 
         # Try to kill all other votes based on others suscpicion
         return False
+    
+    def _vote_logging(self, proposer, mission, reason):
+
+        log_output = "ROUND: {} PROPOSER: {} PLAYER: {} MISSION: {} {} {}"
+        log_output = log_output.format(self.current_round, proposer, self.player_number, str(mission), reason, str(self.confirmed_spies))
+        logging.debug(log_output)
 
     def vote_outcome(self, mission, proposer, votes):
         '''Reflex agent cannot deal with '''
@@ -195,12 +200,10 @@ class ReflexAgent(Agent):
     def betray(self, mission, proposer):
         '''Determine whether to betray the mission'''
 
-        print("BETRAYAL START")
-
         # Ensure that resistance don't betray the mission
         # by a bad function call
         if not self.spy:
-            print("NOT A SPY: ", self.player_number)            
+            logging.debug("NOT A SPY: ", self.player_number)            
             return False
 
         # Determine actions when all team members are spies
@@ -210,17 +213,25 @@ class ReflexAgent(Agent):
             if self.current_round == 1:
                 return False
 
-            # Spies have to risk a burning event because
+            # Spies have to risk a burning event 
             if len(mission) == 2 and self.missions_failed == 0:
-                return random.random() < (1/len(mission)) + 0.1
+                betray = random.random() < (1/len(mission)) + 0.1
 
-            return random.random() < (1/len(mission)) - 0.1
+                if betray:
+                    logging.debug("BETRAYING MISSION: {}".format(self.player_number))
+                return betray
+
+            betray = random.random() < (1/len(mission)) - 0.1
+            if betray:
+                logging.debug("BETRAYING MISSION: {}".format(self.player_number))
+            return betray
 
         # Nothing to lose in the last round
         if self.current_round == 5:
+            logging.debug("LAST ROUND BETRAYAL: {}".format(self.player_number))
             return True
 
-        print("BETRAYAL END")
+        logging.debug("JUST BECAUSE BETRAYAL ROUND: {} BETRAYOR: ".format(self.current_round, self.player_number))
         return True
 
 
@@ -231,6 +242,7 @@ class ReflexAgent(Agent):
         if len(mission) == betrayals:
             self.confirmed_spies.extend(mission)
             self.confirmed_spies = list(set(self.confirmed_spies))
+            logging.debug("SPIES BURNED THEMSELVES in ROUND {}".format(self.current_round, str(self.confirmed_spies)))
             return
 
         # Update the agent depending on role
@@ -256,6 +268,7 @@ class ReflexAgent(Agent):
             known_spies = [spy for spy in mission if spy != self.player_number]
             self.confirmed_spies.extend(known_spies)
             self.confirmed_spies = list(set(self.confirmed_spies))
+            logging.debug("BURNED THEMSELVES in ROUND {} ({}) TO PLAYER: {}".format(self.current_round,  str(known_spies), self.player_number))
 
     def round_outcome(self, rounds_complete, missions_failed):
         '''Update rounds and mission failures'''

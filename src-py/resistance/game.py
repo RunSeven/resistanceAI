@@ -19,9 +19,7 @@ class Game:
     num_players = 0
     spies = list()
 
-    # Initialise Rounds
-    rounds = list()
-    missions_lost = 0
+    
 
     def __init__(self, agents, randomise=True):
         '''Setup Game.  If randomise is set to False we will assign
@@ -33,6 +31,7 @@ class Game:
         self._setup_agents(agents)
         self._allocate_spies(randomise)
         self._initialise_agents()
+        self._initialise_rounds()
 
     def _setup_agents(self, agents):
 
@@ -60,6 +59,17 @@ class Game:
         for agent_id in range(self.num_players):
             spy_list = self.spies.copy() if agent_id in self.spies else []
             self.agents[agent_id].new_game(self.num_players, agent_id, spy_list)
+    
+    def _initialise_rounds(self):
+
+        # Initialise Rounds
+        self.rounds = list()
+        self.missions_lost = 0
+
+    def _reset_game(self):
+
+        self.rounds = list()
+        self.missions_lost = 0
 
     def __str__(self):
         s = 'Game between agents:' + str(self.agents)
@@ -76,7 +86,7 @@ class Game:
         leader_id = 0
         for i in range(5):
             self.rounds.append(Round(leader_id, self.agents, self.spies, i))
-
+            
             if not self.rounds[i].play():
                 self.missions_lost += 1
 
@@ -208,7 +218,10 @@ class Mission():
         for i in self.votes_for:
             s+= str(self.agents[i])+', '
         if self.is_approved():    
-            s = s[:-2]+'\nFails recorded:'+ str(len(self.fails))
+            s = s[:-2]+'\nFails recorded: '+ str(len(self.fails))
+            s += "\nSPIES: " 
+            for i in self.spies:
+                s += str(i)+', '
             s += '\nMission '+ ('Succeeded' if self.is_successful() else 'Failed')
         else:
             s = s[:-2]+'\nMission Aborted'

@@ -1,0 +1,5 @@
+Need to decide the threshold for designating a player as a spy.
+
+play games and determine when this threshold works.
+
+Who votes against legit players
