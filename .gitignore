@@ -1,6 +1,7 @@
 #Compiled
 *.pyc
 __pycache__/
+*.*lock*
 
 *.class
 *.html

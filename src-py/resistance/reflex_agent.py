@@ -34,6 +34,7 @@ class ReflexAgent(Agent):
     # Custom Variables
     spy = None
     current_round = None
+    number_of_spies = None
     confirmed_spies = None
 
     # Resistance Member to Frame
@@ -56,6 +57,7 @@ class ReflexAgent(Agent):
         self.number_of_players = number_of_players
         self.player_number = player_number
         self.spies = spies
+        self.number_of_spies = self.spy_count[number_of_players]
 
         # Set Play Status
         self.spy = self.player_number in spies
@@ -70,58 +72,20 @@ class ReflexAgent(Agent):
         '''Create a team based on role'''
         team = None
 
+        proposition = Proposal(self.player_number, self.number_of_players, self.spies, self.confirmed_spies)
+
         # If it's the first round we just lay low
         if self.current_round == 1 or not self.spy:
-            team = self._resistance_mission_proposal(team_size,
-                                                     betrayals_required)
+            team = proposition.resistance_mission_proposal(team_size,
+                                                            self.number_of_spies,
+                                                            betrayals_required)
             return team
 
-        team = self._spy_mission_proposal(team_size, betrayals_required)
+        team = proposition.spy_mission_proposal(team_size, self.number_of_spies, betrayals_required)
 
         return team
 
-    def _resistance_mission_proposal(self, team_size, betrayals_required):
-
-        team = []
-        
-        proposal_string = ''
-        while len(team) < team_size:
-
-            agent = random.randrange(self.number_of_players)
-            proposal_string += str(agent)
-
-            # Don't include burnt agents
-            if agent not in team and agent not in self.confirmed_spies:
-                team.append(agent)
-            
-        random.shuffle(team)
-        return team
-
-    def _spy_mission_proposal(self, team_size, betrayals_required):
-
-        team = []
-        
-        # If agent is burnt add self to poison vote
-        # otherwise poison with someone randomly
-        if self.player_number in self.confirmed_spies:
-            team.append(self.player_number)
-        else:
-            viable_spies = [spy for spy in self.spies if spy not in self.confirmed_spies]
-            team.append(random.choice(viable_spies))
-
-        proposal_string = ''
-        while len(team) < team_size:
-
-            agent = random.randrange(self.number_of_players)
-            proposal_string += str(agent)
-
-            # Don't include burnt agents
-            if agent not in team and agent not in self.confirmed_spies:
-                team.append(agent)
-                            
-
-        random.shuffle(team)
-        return team
+    
 
     def vote(self, mission, proposer):
         '''Determine vote based on player model'''
@@ -170,6 +134,10 @@ class ReflexAgent(Agent):
 
     def _resistance_vote(self, mission, proposer):
         '''Decide on voting if player is resistance'''
+
+        # Proposer is inherently untrustworthy
+        if proposer in self.confirmed_spies:
+            return False
 
         # Only vote against a player if we know they are a spy
         if any([player in mission for player in self.confirmed_spies]):
@@ -278,3 +246,74 @@ class ReflexAgent(Agent):
     def game_outcome(self, spies_win, spies):
         '''This shouldn't matter to Reflex Agent'''
         pass
+
+
+
+
+class Proposal():
+
+
+    def __init__(self, player_number, number_of_players, spies, confirmed_spies):
+        
+        self.player_number = player_number
+        self.number_of_players = number_of_players
+        self.spies = spies
+        self.confirmed_spies = confirmed_spies
+
+    def resistance_mission_proposal(self, team_size, number_of_spies, betrayals_required):
+
+        team = []        
+        
+        # Without adding ourself the mission will fail
+        if (self.number_of_players -1) - team_size < number_of_spies:
+            team.append(self.player_number)
+
+        while len(team) < team_size:
+
+            agent = random.randrange(self.number_of_players)
+            
+            # Don't include burnt agents
+            if agent not in team and agent not in self.confirmed_spies:
+                team.append(agent)
+            
+        random.shuffle(team)
+        return team
+
+    def spy_mission_proposal(self, team_size, number_of_spies, betrayals_required):
+
+        team = []
+        
+        # If agent is burnt add self to poison vote        
+        if self.player_number in self.confirmed_spies:
+            team.append(self.player_number)
+        
+        # Without adding ourself the mission will succeed/fail
+        elif (self.number_of_players -1) - team_size < number_of_spies:
+            team.append(self.player_number)
+        
+        #If self not already in the team random spies until we have enough
+        while len(team) < betrayals_required:
+
+            if len(self.confirmed_spies) - number_of_spies < betrayals_required:
+                break
+
+            viable_spies = [spy for spy in self.spies if spy not in self.confirmed_spies]
+
+            spy = random.choice(viable_spies)
+
+            if spy not in team:
+                team.append()
+
+        proposal_string = ''
+        while len(team) < team_size:
+
+            agent = random.randrange(self.number_of_players)
+            proposal_string += str(agent)
+
+            # Don't include burnt agents
+            if agent not in team and agent not in self.confirmed_spies:
+                team.append(agent)
+                            
+
+        random.shuffle(team)
+        return team

@@ -13,16 +13,17 @@ from reflex_agent import ReflexAgent
 
 
 
-def run_test():
+def run_test(agent_count):
 
     r_win = 0
     r_loss = 0
+    game_count = 10000
 
-    for i in range(0, 1000):    
+    for i in range(0, game_count):    
 
         logging.debug("\n\nNEW GAME {}".format(i))
         
-        success = play_single_agent_game(8)
+        success = play_single_agent_game(agent_count)
         if success:
             r_win += 1
         else:
@@ -32,9 +33,15 @@ def run_test():
     
     print("WINS: ", r_win)
     print("LOSSES: ", r_loss)
+    print("WIN PERCENT: ", round((r_win/game_count) * 100, 3), "%")
     
 
+def run_test_on_all_game_types():
 
+    for i in range(5, 11):
+
+        print("RESISTANCE MEMBERS: {}".format(i))
+        run_test(i)
 
 def play_single_agent_game(agent_count):
     '''Play a game using a single agent_type with varying numbers
@@ -63,5 +70,5 @@ if __name__ == '__main__':
 
     #debug_log_setup()
 
-    run_test()
+    run_test_on_all_game_types()
     #play_single_agent_game(7)
