@@ -1,3 +1,9 @@
+# Debug
+debug*.log
+
+# VS Code
+.vscode/
+
 #Compiled
 *.pyc
 __pycache__/
