@@ -17,7 +17,7 @@ class Game:
     # Setup Game Space
     agents = None
     num_players = 0
-    spies = list()
+    spies = None
 
     
 
@@ -38,6 +38,7 @@ class Game:
         self.agents = agents.copy()
         random.shuffle(self.agents)
         self.num_players = len(agents)
+        self.spies = list()
 
     def _allocate_spies(self, randomise):
         '''For testing we may want to assign agents to particular
