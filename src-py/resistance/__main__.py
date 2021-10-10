@@ -1,9 +1,4 @@
-'''
-'''
-
 import logging
-import datetime
-
 
 import game as game_module
 from spy_catcher import SpyCatcher19800483
@@ -17,7 +12,7 @@ def run_test(agent_count):
 
     r_win = 0
     r_loss = 0
-    game_count = 10000
+    game_count = 1000
 
     for i in range(0, game_count):    
 
@@ -41,7 +36,9 @@ def run_test_on_all_game_types():
     for i in range(5, 11):
 
         print("RESISTANCE MEMBERS: {}".format(i))
+        logging.debug("RESISTANCE MEMBERS: {}".format(i))
         run_test(i)
+
 
 def play_single_agent_game(agent_count):
     '''Play a game using a single agent_type with varying numbers
@@ -68,7 +65,7 @@ def debug_log_setup():
 
 if __name__ == '__main__':
 
-    #debug_log_setup()
+    debug_log_setup()
 
     run_test_on_all_game_types()
     #play_single_agent_game(7)
