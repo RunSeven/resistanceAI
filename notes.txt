@@ -9,3 +9,18 @@ Who votes against legit players
 ?!!IF VOTING AGAINST FIRST MISSION THEN SPY!!?
 
 ?!!TAKE NOTE OF VOTE ORDER!!?
+
+
+search: (team cooperation in zero sum simultaneous games)
+
+#COMMUNICATION AND COOPERATION
+    https://onlinelibrary.wiley.com/doi/pdf/10.3982/TE3049
+
+UMMMM
+    https://people.csail.mit.edu/costis/network2.pdf
+
+
+Search: (pre-play communication multiagent team simultaneous)
+# PRE-PLAY COMMUNICATION
+
+    https://www.jstor.org/stable/2118488
