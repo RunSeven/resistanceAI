@@ -60,7 +60,7 @@ def play_single_agent_game(agent_count):
 
 def debug_log_setup():
 
-    logging.basicConfig(filename='debug.log', level=logging.DEBUG)
+    logging.basicConfig(filename='./logs/debug.log', level=logging.DEBUG)
 
 
 if __name__ == '__main__':
