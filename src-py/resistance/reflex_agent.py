@@ -299,6 +299,103 @@ class AgentAssessment():
         self.confirmed_spy = False
 
 
+class BetrayalCalculator():
+    '''Determines when and under what circumstances to betray a mission'''
+
+    mission = None
+    proposer = None
+    current_round = None
+
+    cooperation = None
+
+    def __init__(self, mission, proposer, number_of_players, current_round, spy_cooperation=False):
+        
+        self.mission = mission
+        self.proposer = proposer
+        self.current_round = current_round
+        self.number_of_players = number_of_players
+
+        self.cooperation = spy_cooperation
+
+
+    def betray(self):
+
+        '''Determine whether to betray the mission'''
+
+        # Ensure that resistance don't betray the mission
+        # by a bad function call
+        if not self.is_spy():
+            logging.debug("NOT A SPY: ", self.player_number)
+            return False
+
+        spies_on_mission = [agent for agent in self.mission if agent in self.spies]
+        betrayals_required = self.fails_required[self.number_of_players][self.current_round - 1]
+
+        betrayal_achievable = True
+        if len(spies_on_mission) < betrayals_required:
+            betrayal_achievable = False
+
+        logging.debug("BETRAYALS REQUIRED: {} SPIES AVAILABLE: {} BETRAYAL ACHIEVABLE {}".format(betrayals_required,
+                                                                                                 len(spies_on_mission),
+                                                                                                 betrayal_achievable))
+
+        # Do not create suspiscion by attempting to fail a
+        # mission without enough support
+        if not betrayal_achievable:
+            logging.debug("ROUND {} BETRAYAL UNACHIEVABLE AGENT {} LAYING LOW".format(self.current_round, self.player_number))
+            return False
+
+
+        # Determine actions when all team members are spies
+        if all([team_member in self.spies for team_member in self.mission]):
+
+            # Don't burn spies on the first round
+            if self.current_round == 1:
+                return False
+
+            # Spies have to risk a burning event
+            if self.current_round == 3 and self.missions_failed == 0:
+                betray = random.random() < (1/len(self.mission)) + 0.1
+
+                if betray:
+                    logging.debug("AGENT {} BETRAYING MISSION THROUGH NECESSITY (ALL TEAM MEMBERS ARE SPIES)".format(self.player_number))
+                else:
+                    logging.debug("AGENT {} HOPING OTHERS WILL BETRAY MISSION (ALL TEAM MEMBERS ARE SPIES)".format(self.player_number))
+
+                return betray
+
+            betray = random.random() < (1/len(self.mission)) - 0.1
+            if betray:
+                logging.debug("RANDOMLY BETRAYING MISSION (ALL TEAM MEMBERS ARE SPIES): {}".format(self.player_number))
+            return betray
+
+        # Nothing to lose in the last round
+        if self.current_round == 5:
+            logging.debug("LAST ROUND BETRAYAL: {}".format(self.player_number))
+            return True
+
+        # If a suspected agent is in a mission they will always betray the mission
+        logging.debug("SPIES ON MISSION: {} SELF: {} BETRAYING SPY: {}".format(str(spies_on_mission), self.player_number, max(spies_on_mission)))
+
+        # Cooperation module
+        if len(spies_on_mission) > 1 and self.fails_required[self.number_of_players][self.current_round - 1] == 1:
+
+            suspected_spies_on_mission = [spy for spy in mission if spy in self.suspected_spies]
+            if self.player_number in self.suspected_spies and self.player_number == max(suspected_spies_on_mission):
+                logging.debug("BETRAYAL BY KNOWN SUSPECT ROUND: {} AGENT: {}".format(self.current_round, self.player_number))
+                return True
+            elif len(suspected_spies_on_mission) == 0 and self.player_number == max(spies_on_mission):
+                logging.debug("BETRAYAL BY LEAD SPY ROUND: {} AGENT: {}".format(self.current_round, self.player_number))
+                return True
+            else:
+                logging.debug("ROUND {}: AGENT {} LAYING LOW, ANOTHER SPY HAS CONFIRMED BETRAYAL: {}".format(self.current_round, self.player_number, max(spies_on_mission)))
+                return False
+
+        logging.debug("BETRAYAL OF OPPORTUNITY ROUND: {} AGENT: {}".format(self.current_round, self.player_number))
+        return True
+
+    
+
 class Vote():
 
     def __init__(self, player_number, current_round, spies, confirmed_spies):
