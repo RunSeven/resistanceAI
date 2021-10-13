@@ -32,14 +32,16 @@ class ReflexAgent(Agent):
 
     # Custom Variables
     spy = None
+    agent_assessment = None
     current_round = None
     number_of_spies = None
     burnt_spies = None
     confirmed_spies = None
     suspected_spies = None
 
-    # Resistance Member to Frame
+    # Resistance Members to Frame
     target_resistance = None
+    
 
     def __init__(self, name='Reflex'):
         '''Assign Name and clear missions failed'''
@@ -50,8 +52,9 @@ class ReflexAgent(Agent):
         self.current_round = 1
         self.confirmed_spies = list()
         self.burnt_spies = list()
-        self.suspected_spies = list()
 
+        # Spy Variables
+        self.suspected_spies = list()
         self.target_resistance = list()
 
     def new_game(self, number_of_players, player_number, spies):
@@ -67,8 +70,8 @@ class ReflexAgent(Agent):
         logging.debug("{} IS A SPY {}".format(self.player_number, self.spy))
 
         spy_probability = self._calculate_initial_spy_probability()
-        self.players = {player: spy_probability
-                        for player in range(0, self.number_of_players)}
+        self.agent_assessment = {player: spy_probability
+                                 for player in range(0, self.number_of_players)}
 
     def is_spy(self):
         '''return spy status'''
@@ -94,8 +97,8 @@ class ReflexAgent(Agent):
 
         # If it's the first round spies just lay low
         # and resistance have no reason to object
-        if self.current_round == 1 or not self.spy:
-            
+        if self.current_round == 1 or not self.is_spy():
+
             team = proposition.resistance_mission_proposal(
                 team_size,
                 self.number_of_spies,
@@ -114,7 +117,7 @@ class ReflexAgent(Agent):
         '''Determine vote based on player model'''
 
         voting = Vote(self.player_number,
-                      self.current_round,                      
+                      self.current_round,
                       self.spies,
                       self.confirmed_spies)
 
@@ -122,7 +125,7 @@ class ReflexAgent(Agent):
         if self.current_round == 1:
             return True
 
-        if self.spy:
+        if self.is_spy():
 
             # If self is burnt default to fail the vote
             if self.player_number in self.confirmed_spies:
@@ -138,7 +141,7 @@ class ReflexAgent(Agent):
     def vote_outcome(self, mission, proposer, votes):
         '''Reflex agent cannot deal with '''
 
-        # Anyone that votes for burnt agents is a traitor
+        # Anyone that votes for burnt agents is a spy
         if any([agent for agent in mission if agent in self.burnt_spies]):
             self.confirmed_spies.append(proposer)
             self.confirmed_spies = list(set(self.confirmed_spies))
@@ -151,22 +154,22 @@ class ReflexAgent(Agent):
 
         # Ensure that resistance don't betray the mission
         # by a bad function call
-        if not self.spy:
+        if not self.is_spy():
             logging.debug("NOT A SPY: ", self.player_number)
             return False
-        
+
         spies_on_mission = [agent for agent in mission if agent in self.spies]
         betrayals_required = self.fails_required[self.number_of_players][self.current_round - 1]
-        
+
         betrayal_achievable = True
         if len(spies_on_mission) < betrayals_required:
             betrayal_achievable = False
 
-        logging.debug("BETRAYALS REQUIRED: {} SPIES AVAILABLE: {} BETRAYAL ACHIEVABLE {}".format(betrayals_required, 
+        logging.debug("BETRAYALS REQUIRED: {} SPIES AVAILABLE: {} BETRAYAL ACHIEVABLE {}".format(betrayals_required,
                                                                                                  len(spies_on_mission),
                                                                                                  betrayal_achievable))
-        
-        # Do not create suspiscion by attempting to fail a 
+
+        # Do not create suspiscion by attempting to fail a
         # mission without enough support
         if not betrayal_achievable:
             logging.debug("ROUND {} BETRAYAL UNACHIEVABLE AGENT {} LAYING LOW".format(self.current_round, self.player_number))
@@ -200,8 +203,8 @@ class ReflexAgent(Agent):
         if self.current_round == 5:
             logging.debug("LAST ROUND BETRAYAL: {}".format(self.player_number))
             return True
-        
-        # If a suspected agent is in a mission they will always betray the mission        
+
+        # If a suspected agent is in a mission they will always betray the mission
         logging.debug("SPIES ON MISSION: {} SELF: {} BETRAYING SPY: {}".format(str(spies_on_mission), self.player_number, max(spies_on_mission)))
 
         # Cooperation module
@@ -239,19 +242,20 @@ class ReflexAgent(Agent):
             return
 
         # Update the agent depending on role
-        if self.spy:
+        if self.is_spy():
             self._spy_mission_outcome(mission, betrayals, mission_success)
         else:
             self._resistance_mission_outcome(mission, betrayals)
 
     def _spy_mission_outcome(self, mission, betrayals, mission_success):
 
+
         # Target a resistance member for vote blocking if
         # they could be suspect
         if not mission_success:
             targets = [resistance for resistance in mission if resistance not in self.spies]
             self.target_resistance.extend(targets)
-        
+
         # Suspected agents should always betray missions
         # Spies should know they do not need to betray a mission
         # if another spy is suspected
@@ -280,8 +284,19 @@ class ReflexAgent(Agent):
         '''This shouldn't matter to Reflex Agent'''
 
         if self.player_number == 0:
-            logging.debug("RESISTANCE WIN: {}  SPIES WERE: {}\n".format(spies_win, 
+            logging.debug("RESISTANCE WIN: {}  SPIES WERE: {}\n".format(spies_win,
                                                                         str(spies)))
+
+
+class AgentAssessment():
+    '''Tracks  how trustworthy an Agent appears'''
+
+    def __init__(self, agent_number, trust_level):
+
+        self.agent_number = agent_number
+        self.trust_level = trust_level
+        self.burnt = False
+        self.confirmed_spy = False
 
 
 class Vote():
@@ -389,10 +404,11 @@ class MissionProposal():
 
             agent = random.randrange(self.number_of_players)
 
-            # Don't include burnt agents
+            # Don't include confirmed spies
             if agent not in team and agent not in self.confirmed_spies:
                 team.append(agent)
 
+        # Hide any evidence of selection order
         random.shuffle(team)
         return team
 
@@ -422,11 +438,9 @@ class MissionProposal():
             if spy not in team:
                 team.append()
 
-        proposal_string = ''
         while len(team) < team_size:
 
             agent = random.randrange(self.number_of_players)
-            proposal_string += str(agent)
 
             # Don't include burnt agents
             if agent not in team and agent not in self.confirmed_spies:
