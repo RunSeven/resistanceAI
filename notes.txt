@@ -21,6 +21,14 @@ UMMMM
 
 
 Search: (pre-play communication multiagent team simultaneous)
+
 # PRE-PLAY COMMUNICATION
 
     https://www.jstor.org/stable/2118488
+
+
+Search : ("pre-play communication" multiagent team)
+
+    https://alife-robotics.co.jp/members2013/icarob/data/papers/GS11/GS11-2.pdf
+
+    https://www.researchgate.net/publication/222536129_Communication_Cooperation_and_Collusion_in_Team_Tournaments_-_An_Experimental_Study
