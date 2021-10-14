@@ -1,5 +1,6 @@
 # Debug
-debug*.log
+logs/
+*debug*.log
 
 # VS Code
 .vscode/
