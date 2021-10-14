@@ -32,3 +32,20 @@ Search : ("pre-play communication" multiagent team)
     https://alife-robotics.co.jp/members2013/icarob/data/papers/GS11/GS11-2.pdf
 
     https://www.researchgate.net/publication/222536129_Communication_Cooperation_and_Collusion_in_Team_Tournaments_-_An_Experimental_Study
+
+
+COLLUSION DETECTION
+https://ieeexplore.ieee.org/document/6939785
+
+
+EX ANTE 
+
+https://arxiv.org/pdf/1912.07712.pdf
+http://proceedings.mlr.press/v139/farina21a/farina21a.pdf
+http://www.honours-programme.deib.polimi.it/2020-2/Deliverable1/CSE_Carminati_SOTA.pdf
+https://proceedings.neurips.cc/paper/2018/file/c17028c9b6e0c5deaad29665d582284a-Paper.pdf
+
+
+
+PREDATOR-PREY
+https://link.springer.com/content/pdf/10.1023/A%3A1008942012299.pdf
