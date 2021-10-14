@@ -168,7 +168,7 @@ class BomAgent(Agent):
         '''A confirmed spy is one that the agent knows to be a spy but cannot assume other
         players know to be a spy'''
 
-        confirmed_spies = [agent.number for agent in self.agent_assessments.values() if agent.distrust_level == 1.0]
+        confirmed_spies = [agent.number for agent in self.agent_assessments.values() if agent.distrust_level >= 1.0]
         return confirmed_spies
 
     def betray(self, mission, proposer):
@@ -317,7 +317,7 @@ class Vote():
         self.spies = spies
         self.agent_assessments = agent_assessments
 
-        self.confirmed_spies = [agent for agent in self.agent_assessments if self.agent_assessments[agent].distrust_level == 1.0]
+        self.confirmed_spies = [agent for agent in self.agent_assessments if self.agent_assessments[agent].distrust_level >= 1.0]
 
     def spy_vote(self, missions_failed, target_resistance):
         '''Decide on voting if player is a spy'''
@@ -351,11 +351,11 @@ class Vote():
         '''Decide on voting if player is resistance'''
 
         # Proposer is inherently untrustworthy
-        if self.agent_assessments[self.proposer].distrust_level == 1.0:
+        if self.agent_assessments[self.proposer].distrust_level >= 1.0:
             return False
 
         # Only vote against a player if we know they are a spy
-        if any([agent in self.mission for agent in self.agent_assessments if self.agent_assessments[agent].distrust_level == 1.0]):
+        if any([agent in self.mission for agent in self.agent_assessments if self.agent_assessments[agent].distrust_level >= 1.0]):
             self._vote_logging("(RESISTANCE) VOTING AGAINST KNOWN SPY")
 
             return False
