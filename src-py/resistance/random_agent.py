@@ -1,5 +1,10 @@
+
+import logging
 from agent import Agent
 import random
+
+
+
 
 class RandomAgent(Agent):        
     '''A sample implementation of a random agent in the game The Resistance'''
@@ -20,6 +25,8 @@ class RandomAgent(Agent):
         self.number_of_players = number_of_players
         self.player_number = player_number
         self.spy_list = spy_list
+
+        logging.debug("{} ({}) IS A SPY {}".format(self.player_number, self.__class__.__name__, self.is_spy()))
 
     def is_spy(self):
         '''
@@ -47,7 +54,12 @@ class RandomAgent(Agent):
         proposer is an int between 0 and number_of_players and is the index of the player who proposed the mission.
         The function should return True if the vote is for the mission, and False if the vote is against the mission.
         '''
-        return random.random()<0.5
+
+        vote_value = random.random() < 0.5
+
+        logging.debug("RANDOM AGENT {} VOTING {}".format(self.player_number, vote_value))
+
+        return vote_value
 
     def vote_outcome(self, mission, proposer, votes):
         '''
@@ -68,8 +80,12 @@ class RandomAgent(Agent):
         The method should return True if this agent chooses to betray the mission, and False otherwise. 
         By default, spies will betray 30% of the time. 
         '''
+
+        betrayal_status = random.random() < 0.3
+        logging.debug("RANDOM AGENT {} BETRAYAL {}".format(self.player_number, betrayal_status))
+
         if self.is_spy():
-            return random.random()<0.3
+            return betrayal_status
 
     def mission_outcome(self, mission, proposer, betrayals, mission_success):
         '''
@@ -80,8 +96,8 @@ class RandomAgent(Agent):
         and mission_success is True if there were not enough betrayals to cause the mission to fail, False otherwise.
         It iss not expected or required for this function to return anything.
         '''
-        #nothing to do here
-        pass
+        if self.player_number == 0:
+            logging.debug("MISSION SUCCESS: {}".format(mission_success))
 
     def round_outcome(self, rounds_complete, missions_failed):
         '''
@@ -98,8 +114,9 @@ class RandomAgent(Agent):
         spies_win, True iff the spies caused 3+ missions to fail
         spies, a list of the player indexes for the spies.
         '''
-        #nothing to do here
-        pass
+        if self.player_number == 0:
+            logging.debug("SPIES WIN: {}  SPIES WERE: {}\n".format(spies_win,
+                                                                   str(spies)))
 
 
 

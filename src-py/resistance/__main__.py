@@ -1,9 +1,9 @@
 import logging
 
 import game as game_module
-from spy_catcher import SpyCatcher19800483
 from random_agent import RandomAgent
 from reflex_agent import ReflexAgent
+from bom_agent import BomAgent
 
 
 
@@ -49,7 +49,7 @@ def play_single_agent_game(agent_count):
     for i in range(0, agent_count):
 
         agent_id = 'X_{}'.format(i)
-        agents.append(ReflexAgent(name=agent_id))
+        agents.append(BomAgent(name=agent_id))
 
     game = game_module.Game(agents)
         
@@ -60,7 +60,7 @@ def play_single_agent_game(agent_count):
 
 def debug_log_setup():
 
-    logging.basicConfig(filename='./logs/debug.log', level=logging.DEBUG)
+    logging.basicConfig(filename='debug.log', level=logging.DEBUG)
 
 
 if __name__ == '__main__':

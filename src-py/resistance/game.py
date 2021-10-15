@@ -21,7 +21,7 @@ class Game:
 
     
 
-    def __init__(self, agents, randomise=True):
+    def __init__(self, agents):
         '''Setup Game.  If randomise is set to False we will assign
         particular agents to be spies/resistance'''
 
@@ -29,7 +29,7 @@ class Game:
             raise Exception('Agent array out of range')
 
         self._setup_agents(agents)
-        self._allocate_spies(randomise)
+        self._allocate_spies()
         self._initialise_agents()
         self._initialise_rounds()
 
@@ -40,20 +40,13 @@ class Game:
         self.num_players = len(agents)
         self.spies = list()
 
-    def _allocate_spies(self, randomise):
-        '''For testing we may want to assign agents to particular
-        roles.  Randomise will allow us to do this through 
-        information in their name or another var to be added'''
+    def _allocate_spies(self):
+        '''Allocate spies and resistance randomly'''
 
-        if randomise:
-
-            while len(self.spies) < Agent.spy_count[self.num_players]:
-                spy = random.randrange(self.num_players)
-                if spy not in self.spies:
-                    self.spies.append(spy)
-
-        else:
-            pass
+        while len(self.spies) < Agent.spy_count[self.num_players]:
+            spy = random.randrange(self.num_players)
+            if spy not in self.spies:
+                self.spies.append(spy)
 
     def _initialise_agents(self):
 
@@ -62,12 +55,6 @@ class Game:
             self.agents[agent_id].new_game(self.num_players, agent_id, spy_list)
     
     def _initialise_rounds(self):
-
-        # Initialise Rounds
-        self.rounds = list()
-        self.missions_lost = 0
-
-    def _reset_game(self):
 
         self.rounds = list()
         self.missions_lost = 0
@@ -91,13 +78,13 @@ class Game:
             if not self.rounds[i].play():
                 self.missions_lost += 1
 
-            for a in self.agents:
+            for a in self.agents:                
                 a.round_outcome(i+1, self.missions_lost)
 
             leader_id = (leader_id+len(self.rounds[i].missions)) % len(self.agents)
 
         for a in self.agents:
-            a.game_outcome(self.missions_lost < 3, self.spies)
+            a.game_outcome(self.missions_lost > 2, self.spies)
 
     def results_to_csv(self):
         '''Print results info to a CSV that can be analysed later'''
@@ -126,7 +113,7 @@ class Round():
         '''
         produces a string representation of the round
         '''
-        s = '\nRound:' + str(self.rnd)
+        s = '\nRound:' + str(self.rnd + 1)
         
         for m in self.missions:
             s = s +'\n'+str(m)
@@ -156,7 +143,7 @@ class Round():
         fails_required = Agent.fails_required[len(self.agents)][self.rnd]
         while len(self.missions)<5:
             team = self.agents[self.leader_id].propose_mission(mission_size, fails_required)
-            mission = Mission(self.leader_id, team, self.agents, self.spies, self.rnd)
+            mission = Mission(self.leader_id, team, self.agents, self.spies, self.rnd, len(self.missions)==4)
             self.missions.append(mission)
             self.leader_id = (self.leader_id+1) % len(self.agents)
             if mission.is_approved():
@@ -175,7 +162,7 @@ class Mission():
     a representation of a proposed mission
     '''
     
-    def __init__(self, leader_id, team, agents, spies, rnd):
+    def __init__(self, leader_id, team, agents, spies, rnd, auto_approve):
         '''
         leader_id is the id of the agent who proposed the mission
         team is the list of agent indexes on the mission
@@ -188,16 +175,16 @@ class Mission():
         self.agents = agents
         self.spies = spies
         self.rnd = rnd
-        self.run()
+        self.run(auto_approve)
 
 
-    def run(self):    
+    def run(self, auto_approve):    
         '''
         Runs the mission, by asking agents to vote, 
         and if the vote is in favour,
         asking spies if they wish to fail the mission
         '''
-        self.votes_for = [i for i in range(len(self.agents)) if self.agents[i].vote(self.team, self.leader_id)]
+        self.votes_for = [i for i in range(len(self.agents)) if auto_approve or self.agents[i].vote(self.team, self.leader_id)]
         for a in self.agents:
             a.vote_outcome(self.team, self.leader_id, self.votes_for)
         if 2*len(self.votes_for) > len(self.agents):
