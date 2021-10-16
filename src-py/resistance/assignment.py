@@ -1,8 +1,8 @@
 '''
 Assignement Test Bed
 
-This module holds all of the code to play agents, setup squads of agents
-to play Resistance.  It also setups logging and create output for analysis
+This module holds the comparative analysis of squads of different types 
+playing against each other.  This involves
 '''
 
 # Standard Modules
@@ -15,9 +15,9 @@ from custom_games import AllocatedAgentsGame
 
 # Custom Agents
 from agent import Agent
-from random_agent import RandomAgent
-from reflex_agent import ReflexAgent
-from bom_agent import BayesianAgent
+from agent.random_agent import RandomAgent
+from agent.deterministic_agent import DeterministicAgent
+from agent.bom_agent import BayesianAgent
 
 # Global Variables
 MISSION_SIZES = {
@@ -47,10 +47,12 @@ class AgentTester():
     agents to different roles etc.'''
 
     number_of_games = None
+    squad_creator = None
 
     def __init__(self, number_of_games=100):
 
         self.number_of_games = number_of_games
+        self.squad_creator = SquadCreator()
 
     def _play_game(self, game, agents):
 
@@ -67,7 +69,7 @@ class AgentTester():
         wins = 0
         squad_creator = SquadCreator()
         for i in range(0, self.number_of_games):
-            agents = squad_creator.create_with_agent_defined_roles(agent_count, agent_class, agent_class)
+            agents = self.squad_creator.create_with_agent_defined_roles(agent_count, agent_class, agent_class)
 
             logging.debug("\n\nNEW GAME ({}) {}".format(game_type.__name__, i))
 
@@ -82,9 +84,8 @@ class AgentTester():
     def test_classes_by_type(self, game_type, resistance_class, spy_class):
 
         wins = 0
-        squad_creator = SquadCreator()
         for i in range(0, self.number_of_games):
-            agents = squad_creator.create_with_agent_defined_roles(agent_count, resistance_class, spy_class)
+            agents = self.squad_creator.create_with_agent_defined_roles(agent_count, resistance_class, spy_class)
 
             logging.debug("\n\nNEW GAME ({}) {}".format(game_type.__name__, i))
 
@@ -93,6 +94,33 @@ class AgentTester():
 
             wins += self._play_game(game, agents)
 
+        print("RESISTANCE SUCCESS RATE: ", round((wins/self.number_of_games) * 100, 3), "%")
+
+
+    def test_classes_by_selected_spy(self, custom_class, is_spy, resistance_class, spy_class):
+
+        wins = 0
+
+        player_type = "RES"
+        if is_spy:
+            player_type = "SPY"
+
+        for i in range(0, self.number_of_games):
+            custom_agent = custom_class(name="{}_PLANTED_IN_RANDOM_POOL".format(player_type))
+            agents = self.squad_creator.replace_single_agent_in_squad(custom_agent, agent_count, is_spy, resistance_class, spy_class)
+
+            logging.debug("\n\nNEW GAME ({}) {}".format(AllocatedAgentsGame.__name__, i))
+
+            game = AllocatedAgentsGame(agents)
+
+            if is_spy:
+                game.allocate_single_spy(custom_agent.name)
+            else:
+                game.allocate_single_resistance(custom_agent.name)
+
+            wins += self._play_game(game, agents)
+
+        logging.info("RESISTANCE SUCCESS RATE: " + str(round((wins/self.number_of_games) * 100, 3)) + "%")
         print("RESISTANCE SUCCESS RATE: ", round((wins/self.number_of_games) * 100, 3), "%")
 
 
@@ -108,18 +136,14 @@ class SquadCreator():
         when both agent types are the same'''
 
         agents = []
-        #print("GENERATING SQUAD OF {} RESISTANCE MEMBERS".format(agent_count))
-        #logging.info("GENERATING SQUAD OF {} RESISTANCE MEMBERS".format(agent_count))
 
         for i in range(0, SPY_COUNT[agent_count]):
             agent_id = 'SPY_{}_{}'.format(spy_agent.__name__, i)
-            #print("ADDING {} TO SQUAD".format(agent_id))
             agents.append(spy_agent(name=agent_id))
 
         while len(agents) < agent_count:
 
             agent_id = 'RES_{}_{}'.format(resistance_agent.__name__, i)
-            #print("ADDING {} TO SQUAD".format(agent_id))
             agents.append(resistance_agent(name=agent_id))
 
         return agents
@@ -139,13 +163,32 @@ class SquadCreator():
 
         return agents
 
+    def replace_single_agent_in_squad(self, custom_agent, agent_count, is_spy, resistance_agent=RandomAgent, spy_agent=RandomAgent):
+        '''Replaces either a single spy or a single resistance member in a previously
+        defined squad'''
 
+        agents = self.create_with_agent_defined_roles(agent_count, resistance_agent, spy_agent)
+
+        search_term = 'RES'
+        if is_spy:
+            search_term = 'SPY'
+
+        replacement_agent_index = None
+        for agent in agents:
+            if search_term in agent.name:
+                replacement_agent_index = agents.index(agent)
+
+        agents[replacement_agent_index] = custom_agent
+
+        return agents
 
 
 def debug_log_setup():
 
     logging.basicConfig(
-        filename='./logs/debug.log', level=logging.DEBUG)
+        filename='./logs/debug.log',
+        level=logging.DEBUG,
+        filemode='w')
 
 
 class InvalidAgentException(Exception):
@@ -154,8 +197,10 @@ class InvalidAgentException(Exception):
 
 if __name__ == '__main__':
 
-    debug_log_setup()
+    #debug_log_setup()
     tester = AgentTester(1000)
+
+    print("\n" + "#" * 50 + "\n")
 
     for agent_count in range(5, 11):
 
@@ -164,16 +209,33 @@ if __name__ == '__main__':
 
         # Test RandomAgent Success/Fail
         print("\nALL RANDOM AGENTS")
-        logging.debug("\nALL RANDOM AGENTS")        
+        logging.debug("\nALL RANDOM AGENTS")
         tester.test_single_class(Game, RandomAgent)
 
-        # Test RandomAgent vs ReflexAgent Success/Fail
-        print("\nREFLEX (RES) VS RANDOM (SPY) AGENTS")
-        logging.debug("\nREFLEX (RES) VS RANDOM (SPY) AGENTS")        
+        # Test RandomAgent Success/Fail
+        print("\nALL DETERMINISTIC AGENTS")
+        logging.debug("\nALL DETERMINISTIC AGENTS")
+        tester.test_single_class(Game, BayesianAgent)
+
+        # Test DeterministicAgent vs RandomAgent Success/Fail
+        print("\nDETERMINISTIC (RES) VS RANDOM (SPY) AGENTS")
+        logging.debug("\nDETERMINISTIC (RES) VS RANDOM (SPY) AGENTS")
         tester.test_classes_by_type(Game, BayesianAgent, RandomAgent)
 
-        # Test RandomAgent vs ReflexAgent Success/Fail
-        print("\nRANDOM (RES) VS REFLEX (SPY) AGENTS")
-        logging.debug("\nRANDOM (RES) VS REFLEX (SPY) AGENTS")        
+        # Test RandomAgent vs DeterministicAgent Success/Fail
+        print("\nRANDOM (RES) VS DETERMINISTIC (SPY) AGENTS")
+        logging.debug("\nRANDOM (RES) VS DETERMINISTIC (SPY) AGENTS")
         tester.test_classes_by_type(Game, RandomAgent, BayesianAgent)
 
+        # Single DETERMINISTIC Spy Amongst Random Agents
+        print("\nSINGLE BAYESIAN SPY IN RANDOM")
+        logging.debug("\nSINGLE BAYESIAN SPY IN RANDOM")
+        tester.test_classes_by_selected_spy(BayesianAgent, True, RandomAgent, RandomAgent)
+
+        # Single DETERMINISTIC Spy Amongst Random Agents
+        print("\nSINGLE BAYESIAN RESISTANCE IN RANDOM")
+        logging.debug("\nSINGLE BAYESIAN RESISTANCE IN RANDOM")
+        tester.test_classes_by_selected_spy(BayesianAgent, False, RandomAgent, RandomAgent)
+
+
+        print("\n\n" + "#" * 50 + "\n")
