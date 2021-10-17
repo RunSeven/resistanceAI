@@ -1,7 +1,7 @@
 # Debug
 logs/
 *debug*.log
-
+*.DS_Store
 .pytest_cache/
 
 # VS Code

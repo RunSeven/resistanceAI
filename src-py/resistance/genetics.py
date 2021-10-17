@@ -24,9 +24,9 @@ class AgentGenetics():
     
     def __repr__(self):
 
-        return "Distrust {} | Vote {} | Betray {}".format(self.distrust,
-                                                          self.vote,
-                                                          self.betray)
+        return "Distrust {} | Vote {} | Betray {}".format(round(self.distrust, 4),
+                                                          round(self.vote, 4),
+                                                          round(self.betray, 4))
 
 
 class AgentPenalties():
@@ -46,11 +46,7 @@ class AgentPenalties():
     
     def __repr__(self):
 
-        return (("FAILED MISSION: {} ")
-               ("| PROPOSE FAILED: {} ")
-               ("| ABORTED MISSION VOTE: {} ")
-               ("| VOTE FOR SUSPECT: {}")
-               ).format(self.failed_mission, self.p_failed_mission, self.vote_fail, self.vote_spy)
+        return "On Failed: {} | Propose Failed: {} | Aborting Vote: {} | Suspect Vote: {}".format(self.failed_mission, self.p_failed_mission, self.vote_fail, self.vote_spy)
 
 
 class AgentOriginator():
@@ -63,7 +59,8 @@ class AgentOriginator():
         '''Seed agents based on the number of players'''
 
         genetics = self._seed_genetics()
-        return seed_agent('X', genetics)
+        penalties = self._seed_penalties()
+        return seed_agent('X', genetics, penalties)
 
     def _seed_genetics(self):
         '''Creates the initial values of the AgentGenetics'''
@@ -75,6 +72,18 @@ class AgentOriginator():
         genetics = AgentGenetics(distrust, vote, betray)
 
         return genetics
+    
+    def _seed_penalties(self):
+        '''Seed the penalty values for association with subversive actions'''
+
+        failed_mission = random.random()
+        p_failed_mission = random.random()
+        vote_fail = random.random()
+        vote_spy = random.random()
+
+        penalties = AgentPenalties(failed_mission, p_failed_mission, vote_fail, vote_spy)
+
+        return penalties
 
     def evolve(self, agent):
         '''Takes each of the values in genetics and muttes them slightly

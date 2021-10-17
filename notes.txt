@@ -58,3 +58,10 @@ http://vigir.missouri.edu/~gdesouza/Research/Conference_CDs/IEEE_SSCI_2007/CI%20
 https://f-leno.github.io/downloads/BRACIS2019.pdf
 https://bayesian-intelligence.com/people/files/Ann-Nicholson/supervision/brendon-taylor/bt-opponent_modeling_in_bayesian_poker.pdf
 https://repositorio-aberto.up.pt/bitstream/10216/67642/2/26519.pdf
+
+
+
+Agent X 
+ Distrust 0.8463 | Vote 0.4341 | Betray 0.25 
+ On Failed: 0.7147105518173916 | Propose Failed: 0.9955295547557798 | Aborting Vote: 0.5280065799118648 | Suspect Vote: 0.06837524874593603 
+ 476

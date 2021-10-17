@@ -57,6 +57,9 @@ class BayesianAgent(Agent):
     # Resistance Members to Frame
     target_resistance = None
 
+    # Last Game Status
+    winner = None
+
     def __init__(self, name='BayesianOpponentModelAgent_19800483', genetics=None, penalties=None):
         '''Assign Name and clear missions failed'''
 
@@ -89,6 +92,7 @@ class BayesianAgent(Agent):
         # Reset information
         self.missions_failed = 0
         self.current_round = 0
+        self.winner = None
 
         # Play Information
         self.number_of_players = number_of_players
@@ -189,6 +193,9 @@ class BayesianAgent(Agent):
             logging.debug("BURNT AGENT {} FOUND IN MISSION {} PROPOSED BY {}".format(str(mission),
                                                                                      str(self._get_burnt_spies()),
                                                                                      proposer))
+
+        # PROB MODE
+
 
     def _get_burnt_spies(self):
         '''A burnt spy is one that has been on a mission where the number of betrayals
@@ -302,6 +309,8 @@ class BayesianAgent(Agent):
         # Update probabilities
         for agent in mission:
 
+            trust_adjustment = 0.0
+
             # Never change trust of burnt agents
             if self.agent_assessments[agent].distrust_level == 1.0:
                 continue
@@ -325,15 +334,12 @@ class BayesianAgent(Agent):
                 trust_adjustment = p_betrayal * self.penalties.failed_mission
                 self.agent_assessments[agent].distrust_level -= trust_adjustment
 
-                
+            # Exit and log on bad probability
+            if trust_adjustment < 0.0 or trust_adjustment >= 1.0:
+                logging.debug("AGENT {} ASSESSMENTS: {}".format(self.player_number, str({agent_number: self.agent_assessments[agent_number].distrust_level for agent_number in self.agent_assessments})))
+                message = "AGENT {} : ROUND {} | SUSPECT {} |  P(FAIL g. SPY) : {} | P(SPY) : {} | P(FAIL) : {} ==> {}".format(self.player_number, self.current_round, agent, p_betrayal_spy, p_spy, p_betrayal, trust_adjustment)
+                raise BadProbabilityException(message)
 
-                if trust_adjustment < 0.0 or trust_adjustment >= 1.0:
-                    logging.debug("AGENT {} ASSESSMENTS: {}".format(self.player_number, str({agent_number: self.agent_assessments[agent_number].distrust_level for agent_number in self.agent_assessments})))
-                    message = "AGENT {} : ROUND {} | SUSPECT {} |  P(FAIL g. SPY) : {} | P(SPY) : {} | P(FAIL) : {} ==> {}".format(self.player_number, self.current_round, agent, p_betrayal_spy, p_spy, p_betrayal, trust_adjustment)
-                    raise BadProbabilityException(message)
-
-
-                
 
 
         # Update the agent depending on role
@@ -374,6 +380,11 @@ class BayesianAgent(Agent):
 
         if self.player_number == 0:
             logging.debug("SPIES WIN: {}  SPIES WERE: {}\n".format(spies_win, str(spies)))
+        
+        if (self.is_spy() and spies_win) or (not self.is_spy() and not spies_win):
+            self.winner = True
+        else:
+            self.winner = False
 
         
 
@@ -431,7 +442,7 @@ class Vote():
         '''Decide on voting if player is resistance'''
 
         # Proposer is inherently untrustworthy
-        if self.voter.agent_assessments[self.proposer].distrust_level == 1.0:
+        if self.voter.agent_assessments[self.proposer].distrust_level >= 1.0:
             self._vote_logging("(RESISTANCE) VOTING AGAINST UNTRUSTWORTHY PROPOSER")
             return False
 
@@ -439,6 +450,7 @@ class Vote():
         if any([agent in self.mission 
                 for agent in self.voter.agent_assessments
                 if self.voter.agent_assessments[agent].distrust_level >= self.genetics.distrust]):
+            
             self._vote_logging("(RESISTANCE) VOTING AGAINST SUSPECTED SPY")
 
             return False
