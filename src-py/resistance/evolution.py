@@ -26,7 +26,7 @@ class AgentWorld():
             raise Exception("Invalid Player Range")
 
         while len(self.agents) < number_of_players:
-            self.agents[agent_generator.create(BayesianAgent)] = 0  
+            self.agents[agent_generator.create(BayesianAgent)] = {'resistance': 0, 'spy': 0}
         
         for agent in self.agents:
             logging.debug("GENETICS: {}".format(str(agent.genetics)))
@@ -41,7 +41,13 @@ class AgentWorld():
         for agent in self.agents:
             
             if agent.winner:
-                self.agents[agent] += 1
+
+                if agent.is_spy():
+                    self.agents[agent]['spy'] += 1
+                    continue
+                
+                self.agents[agent]['resistance'] += 1
+                
     
     def trial_of_the_champions(self, n=1000):
         '''Run 'n' games and select the player with the most wins'''
@@ -55,11 +61,11 @@ class AgentWorld():
         for agent in self.agents:
             if not agent_superior:
                 agent_superior = agent
-            elif self.agents[agent] > self.agents[agent_superior]:
+            elif (self.agents[agent]['spy'] + self.agents[agent]['resistance'] ) > (self.agents[agent_superior]['spy'] + self.agents[agent_superior]['resistance'] ):
                 agent_superior = agent
             
             print("\n")
-            print(agent, "\n", agent.genetics, "\n", agent.penalties, "\n", self.agents[agent])
+            print(agent, "\n", agent.genetics, "\n", agent.penalties, "\n", self.agents[agent]['resistance'], "\n", self.agents[agent]['spy'])
         
         print("\n", "#" * 50, "\n")
 

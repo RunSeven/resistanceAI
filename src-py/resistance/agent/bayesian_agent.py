@@ -19,20 +19,6 @@ from genetics import AgentGenetics, AgentPenalties
 from agent import Agent
 
 
-
-class AgentAssessment():
-
-    def __init__(self, player_number):
-        
-        self.number = player_number
-        
-        # Start with complete trust
-        self.distrust_level = 0.5
-        self.burnt = False
-
-
-
-
 class BayesianAgent(Agent):
     '''Bayesian Opponent Model Agent
     '''
@@ -47,6 +33,7 @@ class BayesianAgent(Agent):
 
     # Custom Variables
     spy = None
+    voting_round = None
     current_round = None
     collusion = False
 
@@ -92,6 +79,7 @@ class BayesianAgent(Agent):
         # Reset information
         self.missions_failed = 0
         self.current_round = 0
+        self.voting_round = 0
         self.winner = None
 
         # Play Information
@@ -156,6 +144,8 @@ class BayesianAgent(Agent):
     def vote(self, mission, proposer):
         '''Determine vote based on player model'''
 
+        self.voting_round += 1
+
         voting = Vote(self,
                       proposer,
                       mission)
@@ -176,6 +166,8 @@ class BayesianAgent(Agent):
 
         return voting.resistance_vote()
 
+        
+
     def vote_outcome(self, mission, proposer, votes):
         '''Reflex agent cannot deal with '''
 
@@ -194,7 +186,17 @@ class BayesianAgent(Agent):
                                                                                      str(self._get_burnt_spies()),
                                                                                      proposer))
 
+        if self.voting_round == 5 and not mission_go_ahead:
+
+            for agent in self.agent_assessments:
+
+                if agent not in votes:
+                    self.agent_assessments[agent].vote_distrust -= 0.15
+
+
         # PROB MODE
+        
+
 
 
     def _get_burnt_spies(self):
@@ -290,6 +292,9 @@ class BayesianAgent(Agent):
     def mission_outcome(self, mission, proposer, betrayals, mission_success):
         '''Update world understanding based on mission outcome'''
 
+        asses = dict(sorted(self.agent_assessments.items(), key=lambda item: item[1].mission_distrust))
+        print(list(asses.values())[-1].mission_distrust)
+
         if self.player_number == 0:
             logging.debug("MISSION SUCCESS: {}".format(mission_success))
 
@@ -322,7 +327,7 @@ class BayesianAgent(Agent):
                 p_success_spy = 1 - self.genetics.distrust
 
                 trust_adjustment = p_success_spy * self.penalties.failed_mission
-                self.agent_assessments[agent].distrust_level += trust_adjustment
+                self.agent_assessments[agent].mission_distrust += trust_adjustment
                 
             else:
 
@@ -332,7 +337,7 @@ class BayesianAgent(Agent):
                 p_betrayal = (betrayals / len(mission)) * p_betrayal_spy
 
                 trust_adjustment = p_betrayal * self.penalties.failed_mission
-                self.agent_assessments[agent].distrust_level -= trust_adjustment
+                self.agent_assessments[agent].mission_distrust -= trust_adjustment
 
             # Exit and log on bad probability
             if trust_adjustment < 0.0 or trust_adjustment >= 1.0:
@@ -371,6 +376,8 @@ class BayesianAgent(Agent):
         '''Update rounds and mission failures'''
         self.current_round = rounds_complete
         self.missions_failed = missions_failed
+
+        self.voting_round = 0
 
         logging.debug("AGENT {} SPY {} ASSESSMENTS: {}".format(self.player_number, self.is_spy(), str({agent_number: self.agent_assessments[agent_number].distrust_level for agent_number in self.agent_assessments})))
 
