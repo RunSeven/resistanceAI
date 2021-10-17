@@ -366,7 +366,7 @@ class BayesianAgent(Agent):
         self.current_round = rounds_complete
         self.missions_failed = missions_failed
 
-        logging.debug("AGENT {} SPY {} ASSESSMENTS: {}".format(self.player_number, str({agent_number: self.agent_assessments[agent_number].distrust_level for agent_number in self.agent_assessments})))
+        logging.debug("AGENT {} SPY {} ASSESSMENTS: {}".format(self.player_number, self.is_spy(), str({agent_number: self.agent_assessments[agent_number].distrust_level for agent_number in self.agent_assessments})))
 
 
     def game_outcome(self, spies_win, spies):

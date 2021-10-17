@@ -197,7 +197,7 @@ class InvalidAgentException(Exception):
 
 if __name__ == '__main__':
 
-    #debug_log_setup()
+    debug_log_setup()
     tester = AgentTester(1000)
 
     print("\n" + "#" * 50 + "\n")
