@@ -49,3 +49,12 @@ https://proceedings.neurips.cc/paper/2018/file/c17028c9b6e0c5deaad29665d582284a-
 
 PREDATOR-PREY
 https://link.springer.com/content/pdf/10.1023/A%3A1008942012299.pdf
+
+
+
+Q TRANSFER
+
+http://vigir.missouri.edu/~gdesouza/Research/Conference_CDs/IEEE_SSCI_2007/CI%20and%20Games%20-%20CIG%202007/data/papers/CIG/S001P017.pdf
+https://f-leno.github.io/downloads/BRACIS2019.pdf
+https://bayesian-intelligence.com/people/files/Ann-Nicholson/supervision/brendon-taylor/bt-opponent_modeling_in_bayesian_poker.pdf
+https://repositorio-aberto.up.pt/bitstream/10216/67642/2/26519.pdf
