@@ -3,7 +3,7 @@ import logging
 import game as game_module
 from random_agent import RandomAgent
 from reflex_agent import ReflexAgent
-from bom_agent import BomAgent
+from bayesian_agent import BomAgent
 
 
 

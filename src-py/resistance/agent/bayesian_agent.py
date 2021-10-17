@@ -15,28 +15,22 @@ Gameplay:
 import logging
 import random
 
+from genetics import AgentGenetics, AgentPenalties
 from agent import Agent
+
 
 
 class AgentAssessment():
 
-    def __init__(self, player_number, spy_probability):
-
+    def __init__(self, player_number):
+        
         self.number = player_number
-
-        self.distrust_level = spy_probability
+        
+        # Start with complete trust
+        self.distrust_level = 0.5
         self.burnt = False
 
 
-class AgentThreshold():
-    '''Holds values for which a player will either trust another player
-    vote against a mission or betray a mission'''
-
-    def __init__(self, distrust=0.65, vote=0.65, betray=0.65):
-
-        self.distrust = distrust
-        self.vote = vote
-        self.betray = betray
 
 
 class BayesianAgent(Agent):
@@ -49,20 +43,21 @@ class BayesianAgent(Agent):
     number_of_players = None
     player_number = None
     spies = None
+    agent_assessments = None
 
     # Custom Variables
     spy = None
     current_round = None
     collusion = False
 
-    # Probabilities
-    agent_assessment = None
-    agent_threshold = None
+    # Probabilities    
+    genetics = None
+    penalties = None
 
     # Resistance Members to Frame
     target_resistance = None
 
-    def __init__(self, name='BayesianOpponentModelAgent_19800483', agent_threshold=None):
+    def __init__(self, name='BayesianOpponentModelAgent_19800483', genetics=None, penalties=None):
         '''Assign Name and clear missions failed'''
 
         self.name = name
@@ -71,21 +66,31 @@ class BayesianAgent(Agent):
         self.current_round = 0
 
         #
-        if isinstance(agent_threshold, AgentThreshold):
-            logging.debug("AGENT: {} USING THRESHOLDS | DISTRUST {} | VOTE {} | BETAYAL {}".format(self.name, agent_threshold.distrust, agent_threshold.vote, agent_threshold.betray))
-            self.agent_threshold = agent_threshold
+        if isinstance(genetics, AgentGenetics):
+            logging.debug("AGENT: {} USING GENETICS | DISTRUST {} | VOTE {} | BETRAYAL {}".format(self.name, genetics.distrust, genetics.vote, genetics.betray))
+            self.genetics = genetics
         else:
-            logging.debug("AGENT: {} USING DEFAULT AGENT THRESHOLD".format(self.name))
-            self.agent_threshold = AgentThreshold()
+            logging.debug("AGENT: {} USING DEFAULT AGENT GENETICS".format(self.name))
+            self.genetics = AgentGenetics()
+        
+        if isinstance(penalties, AgentPenalties):
+            logging.debug("AGENT: {} USING PENALTIES | FAILED MISSION {} | PROPOSE FAILED {} | ABORT MISSION {} | VOTE FOR SUSPECT {}".format(self.name, penalties.failed_mission, penalties.p_failed_mission, penalties.vote_fail, penalties.vote_spy))
+            self.penalties = penalties
+        else:
+            logging.debug("AGENT: {} USING DEFAULT AGENT PENALTIES".format(self.name))
+            self.penalties = AgentPenalties()
 
         # Spy Variables
         self.target_resistance = list()
 
-
-
     def new_game(self, number_of_players, player_number, spies):
         '''New game setup'''
 
+        # Reset information
+        self.missions_failed = 0
+        self.current_round = 0
+
+        # Play Information
         self.number_of_players = number_of_players
         self.player_number = player_number
         self.spies = spies
@@ -95,8 +100,9 @@ class BayesianAgent(Agent):
         logging.debug("{} ({}) IS A SPY {}".format(self.player_number, self.__class__.__name__, self.spy))
 
         trust_level = self._calculate_initial_spy_probability()
-        self.agent_assessments = {player: AgentAssessment(player, trust_level)
+        self.agent_assessments = {player: AgentAssessment(player)
                                   for player in range(0, self.number_of_players)}
+        
 
     def is_spy(self):
         '''return spy status'''
@@ -123,11 +129,10 @@ class BayesianAgent(Agent):
         team = None
 
         proposition = TeamBuilder(self.player_number,
-                                      self.number_of_players,
-                                      self._get_confirmed_spies())
+                                  self.number_of_players,
+                                  self.agent_assessments)
 
-        # If it's the first round spies just lay low
-        # and resistance have no reason to object
+        
         if self.current_round == 0 or not self.is_spy():
 
             team = proposition.resistance_mission_proposal(
@@ -147,12 +152,9 @@ class BayesianAgent(Agent):
     def vote(self, mission, proposer):
         '''Determine vote based on player model'''
 
-        voting = Vote(proposer,
-                      mission,
-                      self.player_number,
-                      self.current_round,
-                      self.spies,
-                      self.agent_assessments)
+        voting = Vote(self,
+                      proposer,
+                      mission)
 
         # Accept any vote in the first round
         if self.current_round == 0:
@@ -162,7 +164,7 @@ class BayesianAgent(Agent):
 
             # If self is burnt default to fail the vote
             if self.player_number in self._get_burnt_spies():
-                logging.debug("{} IS VOTING AGAINST THE MISSION AS THEY ARE BURNT AND SABOTAGING VIA VOTE".format(self.player_number))
+                logging.debug("AGENT {} IS VOTING AGAINST THE MISSION AS THEY ARE BURNT AND SABOTAGING VIA VOTE".format(self.player_number))
                 return False
 
             return voting.spy_vote(self.missions_failed,
@@ -172,6 +174,11 @@ class BayesianAgent(Agent):
 
     def vote_outcome(self, mission, proposer, votes):
         '''Reflex agent cannot deal with '''
+
+        mission_go_ahead = len(votes) >= self.number_of_players / 2
+
+        if self.player_number == 0:
+            logging.debug("MISSION GO AHEAD: {} | {}".format(mission_go_ahead, mission))
 
         # Anyone that votes for burnt agents is a spy
         if any([agent for agent in mission if agent in self._get_burnt_spies()]):
@@ -193,15 +200,12 @@ class BayesianAgent(Agent):
 
         return burnt_spies
 
-    def _get_confirmed_spies(self):
-        '''A confirmed spy is one that the agent knows to be a spy but cannot assume other
-        players know to be a spy'''
-
-        confirmed_spies = [agent.number for agent in self.agent_assessments.values() if agent.distrust_level == 1.0]
-        return confirmed_spies
 
     def betray(self, mission, proposer):
         '''Determine whether to betray the mission'''
+
+        # STANDARD LOGIC
+        # PLAYABLE WITHOUT RISK UNDER ANY CIRCUMSTANCES
 
         # Ensure that resistance don't accidentally betray the mission
         if not self.is_spy():
@@ -212,7 +216,7 @@ class BayesianAgent(Agent):
         spies_on_mission = [agent for agent in mission if agent in self.spies]
         betrayals_required = self.fails_required[self.number_of_players][self.current_round]
 
-        # Do not betray secure mission
+        # Do not betray mission that can't fail
         if len(spies_on_mission) < betrayals_required:
             logging.debug("ROUND {} BETRAYAL UNACHIEVABLE AGENT {} LAYING LOW".format(self.current_round, self.player_number))
             return False
@@ -220,12 +224,20 @@ class BayesianAgent(Agent):
         logging.debug("BETRAYALS REQUIRED: {} SPIES AVAILABLE: {} BETRAYAL ACHIEVABLE".format(betrayals_required,
                                                                                                  len(spies_on_mission)))
 
+        time_pressure = self.current_round / 4
+
         # Always betray last round as zero risk
-        if self.current_round == 4:
+        if time_pressure == 1:
             logging.debug("LAST ROUND BETRAYAL: {}".format(self.player_number))
             return True
+        elif self.missions_failed == 2:
+            logging.debug("WINNING BETRAYAL: {}".format(self.player_number))
+            return True
 
-        # Collusion module
+
+        # COLLUSION MODULE : WARNING PLAY OUTSIDE THE SPIRIT OF THE GAME USING
+        #                    EX ANTE COLLUSION. MUST BE SWITCHED ON PRIOR TO THE
+        #                    GAME BEING STARTED
         if self.collusion and len(spies_on_mission) > 1 and self.fails_required[self.number_of_players][self.current_round] == 1:
 
             if self.player_number == max(spies_on_mission):
@@ -235,14 +247,35 @@ class BayesianAgent(Agent):
                 logging.debug("COLLUSIVE BETRAYAL BY LEAD SPY ({}) ROUND {}: AGENT {} LAYING LOW".format(max(spies_on_mission), self.current_round, self.player_number))
                 return False
 
+        # RANDOM MODULE
+        # USES RANDOMISATION AND 'TIME PRESSURE' BASED ON THE CURRENT
+        # ROUND TO DETERMINE ACTIONS
 
-        if len(spies_on_mission) == 1:
+        # If player is burnt then unlikely on the mission but will always sabotage
+        # Inside random module to prevent intereference with COLLUSION MODULE
+        if self.agent_assessments[self.player_number].burnt:
+            return True
+
+        if len(spies_on_mission) == 1 and time_pressure >= 0.5:
             logging.debug("BETRAYAL OF OPPORTUNITY ROUND: {} AGENT: {}".format(self.current_round, self.player_number))
             return True
 
-        # Determine actions when all team members are spies
-        if all([team_member in self.spies for team_member in mission]):
-            return True
+        # Determine actions when multiple spies on mission
+        if len(spies_on_mission) > 1:
+
+            if time_pressure <= 0.5 and self.missions_failed == 1:
+                logging.debug("ASSESSING RISK ROUND {}: AGENT {} LAYING LOW".format(max(spies_on_mission), self.current_round, self.player_number))
+                return False
+            elif len(spies_on_mission) == len(mission):
+                
+                if self.current_round <= 1: 
+                    
+                    # TODO - Replace Manual Calc for single round option Nash Eq. Calculator
+                    # Based on number of rounds
+                    if random.random() > 0.85:
+                        return True
+                    else:
+                        return False
 
         logging.debug("BETRAYAL OF OPPORTUNITY ROUND: {} AGENT: {}".format(self.current_round, self.player_number))
         return True
@@ -262,6 +295,9 @@ class BayesianAgent(Agent):
 
             logging.debug("SPIES BURNED THEMSELVES in ROUND {} : {}".format(self.current_round, str(self._get_burnt_spies())))
             return
+        
+        # Update the Proposers probabilities first using the priors
+        # If someone was unsuspicious then we will hold them less accountable
 
         # Update probabilities
         for agent in mission:
@@ -274,35 +310,30 @@ class BayesianAgent(Agent):
 
                 # P(spy | success) = P(success | spy) * P(spy) / P(success)
 
-                p_success_spy = 0.3
-                p_spy = self.agent_assessments[agent].distrust_level
+                p_success_spy = 1 - self.genetics.distrust
 
-                p_success_resistance = 1.0
-                p_resistance = 1.0 - p_spy
-
-                p_success = p_success_spy * p_spy + p_success_resistance + p_success_resistance * p_resistance
-
-                distrust_level = (p_success_spy * p_spy) / p_success
-
-                if distrust_level < 0.0 or distrust_level > 1.0:
-                    message = "P(PASS g. RESISTANCE) : {} | P(RESISTANCE) : {} | P(PASS) : {}".format(p_success_spy, p_spy, p_success)
-                    raise BadProbabilityException(message)
-
-                self.agent_assessments[agent].distrust_level = distrust_level
-
+                trust_adjustment = p_success_spy * self.penalties.failed_mission
+                self.agent_assessments[agent].distrust_level += trust_adjustment
+                
             else:
 
-                p_fail_spy = 0.7
                 p_spy = self.agent_assessments[agent].distrust_level
-                p_fail = p_fail_spy * p_spy
 
-                distrust_level = (p_fail_spy * p_spy) / p_fail
+                p_betrayal_spy = self.genetics.distrust                
+                p_betrayal = (betrayals / len(mission)) * p_betrayal_spy
 
-                if distrust_level < 0.0 or distrust_level > 1.0:
-                    message = "ROUND {}  |  P(FAIL g. SPY) : {} | P(SPY) : {} | P(FAIL) : {} ==> {}".format(self.current_round, p_fail_spy, p_spy, p_fail, distrust_level)
+                trust_adjustment = p_betrayal * self.penalties.failed_mission
+                self.agent_assessments[agent].distrust_level -= trust_adjustment
+
+                
+
+                if trust_adjustment < 0.0 or trust_adjustment >= 1.0:
+                    logging.debug("AGENT {} ASSESSMENTS: {}".format(self.player_number, str({agent_number: self.agent_assessments[agent_number].distrust_level for agent_number in self.agent_assessments})))
+                    message = "AGENT {} : ROUND {} | SUSPECT {} |  P(FAIL g. SPY) : {} | P(SPY) : {} | P(FAIL) : {} ==> {}".format(self.player_number, self.current_round, agent, p_betrayal_spy, p_spy, p_betrayal, trust_adjustment)
                     raise BadProbabilityException(message)
 
-                self.agent_assessments[agent].distrust_level = (0.7 * self._calculate_initial_spy_probability()) / ((self.current_round + 1) / 5)
+
+                
 
 
         # Update the agent depending on role
@@ -327,7 +358,7 @@ class BayesianAgent(Agent):
 
             for agent in known_spies:
                 self.agent_assessments[agent].distrust_level = 1.0
-
+                
             logging.debug("AGENT(S) ({}) CONFIRMED AS SPIES in ROUND {} TO PLAYER: {}".format(str(known_spies), self.current_round, self.player_number))
 
     def round_outcome(self, rounds_complete, missions_failed):
@@ -335,13 +366,16 @@ class BayesianAgent(Agent):
         self.current_round = rounds_complete
         self.missions_failed = missions_failed
 
+        logging.debug("AGENT {} SPY {} ASSESSMENTS: {}".format(self.player_number, str({agent_number: self.agent_assessments[agent_number].distrust_level for agent_number in self.agent_assessments})))
+
+
     def game_outcome(self, spies_win, spies):
         '''This shouldn't matter to Reflex Agent'''
 
         if self.player_number == 0:
             logging.debug("SPIES WIN: {}  SPIES WERE: {}\n".format(spies_win, str(spies)))
 
-        logging.debug("AGENT {} ASSESSMENTS: {}".format(self.player_number, str({agent_number: self.agent_assessments[agent_number].distrust_level for agent_number in self.agent_assessments})))
+        
 
 
 
@@ -350,25 +384,26 @@ class BayesianAgent(Agent):
 
 class Vote():
 
-    def __init__(self, proposer, mission, player_number, current_round, spies, agent_assessments):
+    def __init__(self, voter, proposer, mission):
+
+        self.voter = voter
+        self.genetics = voter.genetics
 
         self.proposer = proposer
         self.mission = mission
 
-        self.player_number = player_number
-        self.current_round = current_round
-        self.spies = spies
-        self.agent_assessments = agent_assessments
-
-        self.confirmed_spies = [agent
-                                for agent in self.agent_assessments
-                                if self.agent_assessments[agent].distrust_level == 1.0]
+        self.confirmed_spies = {agent: voter.agent_assessments[agent].distrust_level
+                                for agent in voter.agent_assessments
+                                if voter.agent_assessments[agent].distrust_level >= voter.genetics.distrust}
 
     def spy_vote(self, missions_failed, target_resistance):
         '''Decide on voting if player is a spy'''
 
         # Spies shouldn't vote for burnt assets
-        if any([agent in self.mission for agent in self.agent_assessments if self.agent_assessments[agent].burnt]):
+        if any([agent in self.mission 
+                for agent in self.voter.agent_assessments 
+                if self.voter.agent_assessments[agent].burnt]):
+
             self._vote_logging("(SPY) VOTING AGAINST BURNT ASSET ")
             return False
 
@@ -379,11 +414,11 @@ class Vote():
             return False
 
         # No spies in mission
-        if any([team_member not in self.spies for team_member in self.mission]):
+        if any([team_member not in self.voter.spies for team_member in self.mission]):
 
             # If we have breathing room then allow it
-            if self.current_round - missions_failed + 1 > 0:
-                self._vote_logging("(SPY) VOTING YES AS ROUNDS LEFT STILL ALLOW FOR SABOTAGE")
+            if 4 - self.voter.current_round >= 3 - missions_failed:
+                self._vote_logging("(SPY) VOTING YES AS {} ROUNDS LEFT AND ONLY {} FAILS REQUIRED".format(4 - self.voter.current_round, 3 - missions_failed))
                 return True
             else:
                 self._vote_logging("(SPY) VOTING NO DUE TO NUMBER OF ROUNDS LEFT")
@@ -396,12 +431,15 @@ class Vote():
         '''Decide on voting if player is resistance'''
 
         # Proposer is inherently untrustworthy
-        if self.agent_assessments[self.proposer].distrust_level == 1.0:
+        if self.voter.agent_assessments[self.proposer].distrust_level == 1.0:
+            self._vote_logging("(RESISTANCE) VOTING AGAINST UNTRUSTWORTHY PROPOSER")
             return False
 
         # Only vote against a player if we know they are a spy
-        if any([agent in self.mission for agent in self.agent_assessments if self.agent_assessments[agent].distrust_level == 1.0]):
-            self._vote_logging("(RESISTANCE) VOTING AGAINST KNOWN SPY")
+        if any([agent in self.mission 
+                for agent in self.voter.agent_assessments
+                if self.voter.agent_assessments[agent].distrust_level >= self.genetics.distrust]):
+            self._vote_logging("(RESISTANCE) VOTING AGAINST SUSPECTED SPY")
 
             return False
 
@@ -411,9 +449,9 @@ class Vote():
     def _vote_logging(self, reason):
 
         log_output = "ROUND: {} PROPOSER: {} VOTING PLAYER: {} MISSION: {} {} {}"
-        log_output = log_output.format(self.current_round,
+        log_output = log_output.format(self.voter.current_round,
                                        self.proposer,
-                                       self.player_number,
+                                       self.voter.player_number,
                                        str(self.mission),
                                        reason,
                                        str(self.confirmed_spies))
@@ -422,11 +460,15 @@ class Vote():
 
 class TeamBuilder():
 
-    def __init__(self, player_number, number_of_players, confirmed_spies):
+    def __init__(self, player_number, number_of_players, agent_assessments):
 
         self.player_number = player_number
         self.number_of_players = number_of_players
-        self.confirmed_spies = confirmed_spies
+        self.agent_assessments = agent_assessments
+
+        self.confirmed_spies = [agent
+                                for agent in self.agent_assessments
+                                if self.agent_assessments[agent].distrust_level == 1.0]
 
     def resistance_mission_proposal(self, team_size, number_of_spies, betrayals_required):
 

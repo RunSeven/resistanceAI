@@ -17,7 +17,7 @@ from custom_games import AllocatedAgentsGame
 from agent import Agent
 from agent.random_agent import RandomAgent
 from agent.deterministic_agent import DeterministicAgent
-from agent.bom_agent import BayesianAgent
+from agent.bayesian_agent import BayesianAgent
 
 # Global Variables
 MISSION_SIZES = {
@@ -207,7 +207,7 @@ if __name__ == '__main__':
         print("\nRUNNING GAMES OF {} PLAYERS".format(agent_count))
         logging.debug("\n\nRUNNING GAMES OF {} PLAYERS".format(agent_count))
 
-        # Test RandomAgent Success/Fail
+        '''# Test RandomAgent Success/Fail
         print("\nALL RANDOM AGENTS")
         logging.debug("\nALL RANDOM AGENTS")
         tester.test_single_class(Game, RandomAgent)
@@ -215,27 +215,37 @@ if __name__ == '__main__':
         # Test RandomAgent Success/Fail
         print("\nALL DETERMINISTIC AGENTS")
         logging.debug("\nALL DETERMINISTIC AGENTS")
-        tester.test_single_class(Game, BayesianAgent)
+        tester.test_single_class(Game, DeterministicAgent)
 
         # Test DeterministicAgent vs RandomAgent Success/Fail
         print("\nDETERMINISTIC (RES) VS RANDOM (SPY) AGENTS")
         logging.debug("\nDETERMINISTIC (RES) VS RANDOM (SPY) AGENTS")
-        tester.test_classes_by_type(Game, BayesianAgent, RandomAgent)
+        tester.test_classes_by_type(Game, DeterministicAgent, RandomAgent)
 
         # Test RandomAgent vs DeterministicAgent Success/Fail
         print("\nRANDOM (RES) VS DETERMINISTIC (SPY) AGENTS")
         logging.debug("\nRANDOM (RES) VS DETERMINISTIC (SPY) AGENTS")
-        tester.test_classes_by_type(Game, RandomAgent, BayesianAgent)
+        tester.test_classes_by_type(Game, RandomAgent, DeterministicAgent)
 
         # Single DETERMINISTIC Spy Amongst Random Agents
-        print("\nSINGLE BAYESIAN SPY IN RANDOM")
-        logging.debug("\nSINGLE BAYESIAN SPY IN RANDOM")
-        tester.test_classes_by_selected_spy(BayesianAgent, True, RandomAgent, RandomAgent)
+        print("\nSINGLE DETERMINISTIC SPY IN RANDOM")
+        logging.debug("\nSINGLE DETERMINISTIC SPY IN RANDOM")
+        tester.test_classes_by_selected_spy(DeterministicAgent, True, RandomAgent, RandomAgent)
 
         # Single DETERMINISTIC Spy Amongst Random Agents
-        print("\nSINGLE BAYESIAN RESISTANCE IN RANDOM")
-        logging.debug("\nSINGLE BAYESIAN RESISTANCE IN RANDOM")
-        tester.test_classes_by_selected_spy(BayesianAgent, False, RandomAgent, RandomAgent)
+        print("\nSINGLE DETERMINISTIC RESISTANCE IN RANDOM")
+        logging.debug("\nSINGLE DETERMINISTIC RESISTANCE IN RANDOM")
+        tester.test_classes_by_selected_spy(DeterministicAgent, False, RandomAgent, RandomAgent)'''
+
+        # Test BayesianAgent vs DeterministicAgent Success/Fail
+        print("\nBAYESIAN (RES) VS DETERMINISTIC (SPY) AGENTS")
+        logging.debug("\nBAYESIAN (RES) VS DETERMINISTIC (SPY) AGENTS")
+        tester.test_classes_by_type(Game, BayesianAgent, DeterministicAgent)
+
+        # Test BayesianAgent vs DeterministicAgent Success/Fail
+        print("\nDETERMINISTIC (RES) VS BAYESIAN (SPY) AGENTS")
+        logging.debug("\nDETERMINISTIC (RES) VS BAYESIAN (SPY) AGENTS")
+        tester.test_classes_by_type(Game, DeterministicAgent, BayesianAgent)
 
 
         print("\n\n" + "#" * 50 + "\n")

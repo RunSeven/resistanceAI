@@ -28,6 +28,18 @@ class AgentAssessment():
         self.burnt = False
 
 
+
+class AgentThreshold():
+    '''Holds values for which a player will either trust another player
+    vote against a mission or betray a mission'''
+
+    def __init__(self, distrust=0.65, vote=0.65, betray=0.65):
+
+        self.distrust = distrust
+        self.vote = vote
+        self.betray = betray
+
+
 class DeterministicAgent(Agent):
     '''Deterministic Agent has minimal understanding of the world.  Only remembers
     major game events.  Uses a mix of deterministic logic and randomness
@@ -163,6 +175,11 @@ class DeterministicAgent(Agent):
     def vote_outcome(self, mission, proposer, votes):
         '''Reflex agent cannot deal with '''
 
+        mission_go_ahead = len(votes) >= self.number_of_players / 2
+
+        if self.player_number == 0:
+            logging.debug("MISSION GO AHEAD: {} | {}".format(mission_go_ahead, mission))
+
         # Anyone that votes for burnt agents is a spy
         if any([agent for agent in mission if agent in self._get_burnt_spies()]):
 
@@ -193,6 +210,9 @@ class DeterministicAgent(Agent):
     def betray(self, mission, proposer):
         '''Determine whether to betray the mission'''
 
+        # STANDARD LOGIC
+        # PLAYABLE WITHOUT RISK UNDER ANY CIRCUMSTANCES
+
         # Ensure that resistance don't accidentally betray the mission
         if not self.is_spy():
             logging.debug("NOT A SPY: ", self.player_number)
@@ -210,12 +230,20 @@ class DeterministicAgent(Agent):
         logging.debug("BETRAYALS REQUIRED: {} SPIES AVAILABLE: {} BETRAYAL ACHIEVABLE".format(betrayals_required,
                                                                                                  len(spies_on_mission)))
 
+        time_pressure = self.current_round / 4
+
         # Always betray last round as zero risk
-        if self.current_round == 4:
+        if time_pressure == 1:
             logging.debug("LAST ROUND BETRAYAL: {}".format(self.player_number))
             return True
+        elif self.missions_failed == 2:
+            logging.debug("WINNING BETRAYAL: {}".format(self.player_number))
+            return True
 
-        # Collusion module
+
+        # COLLUSION MODULE : WARNING PLAY OUTSIDE THE SPIRIT OF THE GAME USING
+        #                    EX ANTE COLLUSION. MUS BE SWITCHED ON PRIOR TO THE
+        #                    GAME BEING STARTED
         if self.collusion and len(spies_on_mission) > 1 and self.fails_required[self.number_of_players][self.current_round] == 1:
 
             if self.player_number == max(spies_on_mission):
@@ -225,21 +253,35 @@ class DeterministicAgent(Agent):
                 logging.debug("COLLUSIVE BETRAYAL BY LEAD SPY ({}) ROUND {}: AGENT {} LAYING LOW".format(max(spies_on_mission), self.current_round, self.player_number))
                 return False
 
+        # RANDOM MODULE
+        # USES RANDOMISATION AND 'TIME PRESSURE' BASED ON THE CURRENT
+        # ROUND TO DETERMINE ACTIONS
 
-        if len(spies_on_mission) == 1:
+        # If player is burnt then unlikely on the mission but will always sabotage
+        # Inside random module to prevent intereference with COLLUSION MODULE
+        if self.agent_assessments[self.player_number].burnt:
+            return True
+
+        if len(spies_on_mission) == 1 and time_pressure >= 0.5:
             logging.debug("BETRAYAL OF OPPORTUNITY ROUND: {} AGENT: {}".format(self.current_round, self.player_number))
             return True
-        
-        # If player is burnt then shouldn't be on mission but always sabotage
-        if self.agent_assessment[self.player_number].burnt:
-                return True
 
-        # Determine actions when all team members are spies
-        if all([team_member in self.spies for team_member in mission]):
+        # Determine actions when multiple spies on mission
+        if len(spies_on_mission) > 1:
 
-            
-
-            return True
+            if time_pressure <= 0.5 and self.missions_failed == 1:
+                logging.debug("ASSESSING RISK ROUND {}: AGENT {} LAYING LOW".format(max(spies_on_mission), self.current_round, self.player_number))
+                return False
+            elif len(spies_on_mission) == len(mission):
+                
+                if self.current_round <= 1: 
+                    
+                    # TODO - Replace Manual Calc for single round option Nash Eq. Calculator
+                    # Based on number of rounds
+                    if random.random() > 0.85:
+                        return True
+                    else:
+                        return False
 
         logging.debug("BETRAYAL OF OPPORTUNITY ROUND: {} AGENT: {}".format(self.current_round, self.player_number))
         return True
@@ -332,13 +374,14 @@ class DeterministicAgent(Agent):
         self.current_round = rounds_complete
         self.missions_failed = missions_failed
 
+        logging.debug("AGENT {} ASSESSMENTS: {}".format(self.player_number, str({agent_number: self.agent_assessments[agent_number].distrust_level for agent_number in self.agent_assessments})))
+
     def game_outcome(self, spies_win, spies):
         '''This shouldn't matter to Reflex Agent'''
 
         if self.player_number == 0:
             logging.debug("SPIES WIN: {}  SPIES WERE: {}\n".format(spies_win, str(spies)))
 
-        logging.debug("AGENT {} ASSESSMENTS: {}".format(self.player_number, str({agent_number: self.agent_assessments[agent_number].distrust_level for agent_number in self.agent_assessments})))
 
 
 
@@ -376,11 +419,11 @@ class Vote():
             return False
 
         # No spies in mission
-        if any([team_member not in self.spies for team_member in self.mission]):
+        if all([team_member not in self.spies for team_member in self.mission]):
 
             # If we have breathing room then allow it
-            if self.current_round - missions_failed + 1 > 0:
-                self._vote_logging("(SPY) VOTING YES AS ROUNDS LEFT STILL ALLOW FOR SABOTAGE")
+            if 4 - self.current_round >= 3 - missions_failed:
+                self._vote_logging("(SPY) VOTING YES AS {} ROUNDS LEFT AND ONLY {} FAILS REQUIRED".format(4 - self.current_round, 3 - missions_failed))
                 return True
             else:
                 self._vote_logging("(SPY) VOTING NO DUE TO NUMBER OF ROUNDS LEFT")

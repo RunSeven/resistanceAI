@@ -34,7 +34,7 @@ class AllocatedAgentsGame():
 
     def _setup_agents(self, agents):
 
-        self.agents = agents.copy()
+        self.agents = agents.copy()        
         random.shuffle(self.agents)
         self.number_of_players = len(agents)
         self.spies = list()
@@ -114,6 +114,7 @@ class AllocatedAgentsGame():
             self.agents[player_number].new_game(self.number_of_players,
                                                 player_number,
                                                 spy_list)
+            
 
     def _initialise_rounds(self):
 

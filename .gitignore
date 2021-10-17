@@ -2,6 +2,8 @@
 logs/
 *debug*.log
 
+.pytest_cache/
+
 # VS Code
 .vscode/
 
