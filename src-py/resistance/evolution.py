@@ -11,6 +11,7 @@ from genetics import AgentGenetics
 from genetics import AgentOriginator
 
 from agent.bayesian_agent import BayesianAgent
+from agent.deterministic_agent import DeterministicAgent
 
 class AgentWorld():
     '''Starts off the cycle of evolution'''
@@ -86,7 +87,7 @@ def main():
 
     world = AgentWorld()
     world.genesis(agent_generator, 5)
-    world.trial_of_the_champions()
+    world.trial_of_the_champions(100)
 
     
 

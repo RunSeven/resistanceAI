@@ -18,26 +18,7 @@ import random
 from agent import Agent
 
 
-class AgentAssessment():
-
-    def __init__(self, player_number, spy_probability):
-
-        self.number = player_number
-
-        self.distrust_level = spy_probability
-        self.burnt = False
-
-
-
-class AgentThreshold():
-    '''Holds values for which a player will either trust another player
-    vote against a mission or betray a mission'''
-
-    def __init__(self, distrust=0.65, vote=0.65, betray=0.65):
-
-        self.distrust = distrust
-        self.vote = vote
-        self.betray = betray
+from genetics import AgentGenetics, AgentPenalties, AgentPredisposition
 
 
 class DeterministicAgent(Agent):
@@ -56,15 +37,17 @@ class DeterministicAgent(Agent):
     spy = None
     current_round = None
     collusion = False
+    winner = None
 
     # Probabilities
     agent_assessment = None
-    agent_threshold = None
+    genetics = None
+    penalties = None
 
     # Resistance Members to Frame
     target_resistance = None
 
-    def __init__(self, name='BayesianOpponentModelAgent_19800483', agent_threshold=None):
+    def __init__(self, name='BayesianOpponentModelAgent_19800483', genetics=None, penalties=None):
         '''Assign Name and clear missions failed'''
 
         self.name = name
@@ -73,12 +56,19 @@ class DeterministicAgent(Agent):
         self.current_round = 0
 
         #
-        if isinstance(agent_threshold, AgentThreshold):
-            logging.debug("AGENT: {} USING THRESHOLDS | DISTRUST {} | VOTE {} | BETAYAL {}".format(self.name, agent_threshold.distrust, agent_threshold.vote, agent_threshold.betray))
-            self.agent_threshold = agent_threshold
+        if isinstance(genetics, AgentGenetics):
+            logging.debug("AGENT: {} USING THRESHOLDS | DISTRUST {} | VOTE {} | BETAYAL {}".format(self.name, genetics.distrust, genetics.vote, genetics.betray))
+            self.genetics = genetics
         else:
             logging.debug("AGENT: {} USING DEFAULT AGENT THRESHOLD".format(self.name))
-            self.agent_threshold = AgentThreshold()
+            self.genetics = AgentGenetics()
+
+        if isinstance(penalties, AgentPenalties):
+            logging.debug("AGENT: {} USING PENALTIES | FAILED MISSION {} | PROPOSE FAILED {} | ABORT MISSION {} | VOTE FOR SUSPECT {}".format(self.name, penalties.failed_mission, penalties.p_failed_mission, penalties.vote_fail, penalties.vote_spy))
+            self.penalties = penalties
+        else:
+            logging.debug("AGENT: {} USING DEFAULT AGENT PENALTIES".format(self.name))
+            self.penalties = AgentPenalties()
 
         # Spy Variables
         self.target_resistance = list()
@@ -91,13 +81,14 @@ class DeterministicAgent(Agent):
         self.number_of_players = number_of_players
         self.player_number = player_number
         self.spies = spies
+        self.winner = None
 
         # Set Play Status
         self.spy = self.player_number in spies
         logging.debug("{} ({}) IS A SPY {}".format(self.player_number, self.__class__.__name__, self.spy))
 
         trust_level = self._calculate_initial_spy_probability()
-        self.agent_assessments = {player: AgentAssessment(player, trust_level)
+        self.agent_assessments = {player: AgentPredisposition(player)
                                   for player in range(0, self.number_of_players)}
 
     def is_spy(self):
@@ -219,8 +210,8 @@ class DeterministicAgent(Agent):
             return False
 
         # Setup betrayal space
-        spies_on_mission = [agent for agent in mission if agent in self.spies]
-        betrayals_required = self.fails_required[self.number_of_players][self.current_round]
+        spies_on_mission = [agent for agent in mission if agent in self.spies]        
+        betrayals_required = self.fails_required[self.number_of_players][self.current_round - 1]
 
         # Do not betray mission that can't fail
         if len(spies_on_mission) < betrayals_required:
@@ -381,6 +372,11 @@ class DeterministicAgent(Agent):
 
         if self.player_number == 0:
             logging.debug("SPIES WIN: {}  SPIES WERE: {}\n".format(spies_win, str(spies)))
+        
+        if (self.is_spy() and spies_win) or (not self.is_spy() and not spies_win):
+            self.winner = True
+        else:
+            self.winner = False
 
 
 

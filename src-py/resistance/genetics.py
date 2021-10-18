@@ -78,22 +78,22 @@ class AgentOriginator():
         name = 'X_{}'.format(random.randint(0, 10000))
         return seed_agent(name, genetics, penalties)
     
-        def evolve(self, agent):
-            '''Takes each of the values in genetics and muttes them slightly
-            using the mutations to build a new agent'''
+    def evolve(self, agent):
+        '''Takes each of the values in genetics and muttes them slightly
+        using the mutations to build a new agent'''
 
-            genetics = agent.genetics
+        genetics = agent.genetics
 
-            distrust = self._mutate_gene(genetics.distrust)
-            vote = self._mutate_gene(genetics.vote)
-            betray = self._mutate_gene(genetics.betray)
+        distrust = self._mutate_gene(genetics.distrust)
+        vote = self._mutate_gene(genetics.vote)
+        betray = self._mutate_gene(genetics.betray)
 
-            mutations = AgentGenetics(distrust, vote, betray)
+        mutations = AgentGenetics(distrust, vote, betray)
 
-            mutation_time = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
-            mutation_id = 'M_{}'.format(mutation_time)
+        mutation_time = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
+        mutation_id = 'M_{}'.format(mutation_time)
 
-            return self.seed_agent(mutation_id, mutations)
+        return self.seed_agent(mutation_id, mutations)
 
     def _seed_genetics(self):
         '''Creates the initial values of the AgentGenetics'''
