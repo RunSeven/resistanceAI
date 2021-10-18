@@ -191,7 +191,10 @@ class BayesianAgent(Agent):
             for agent in self.agent_assessments:
 
                 if agent not in votes:
-                    self.agent_assessments[agent].vote_distrust -= 0.15
+                    self.agent_assessments[agent].vote_distrust -= self.penalties.vote_fail
+                else:
+                    self.agent_assessments[agent].vote_distrust += self.penalties.vote_fail
+
 
 
         # PROB MODE

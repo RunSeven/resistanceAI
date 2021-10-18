@@ -50,25 +50,34 @@ class AgentWorld():
                 self.agents[agent]['resistance'] += 1
                 
     
-    def trial_of_the_champions(self, n=1000):
-        '''Run 'n' games and select the player with the most wins'''
+    def trial_of_the_champions(self, number=1000):
+        '''Run number of games and select the player with the most wins'''
 
-        for simulation in range(0, n):
+        for simulation in range(0, number):
             self.run_single_game()
 
         print("\n", "#" * 50)
 
-        agent_superior = None
+        agent_superior_1 = None
+        agent_superior_2 = None
         for agent in self.agents:
-            if not agent_superior:
-                agent_superior = agent
-            elif (self.agents[agent]['spy'] + self.agents[agent]['resistance'] ) > (self.agents[agent_superior]['spy'] + self.agents[agent_superior]['resistance'] ):
-                agent_superior = agent
+            if not agent_superior_1:
+                agent_superior_1 = agent
+            elif (self.agents[agent]['spy'] + self.agents[agent]['resistance'] ) > (self.agents[agent_superior_1]['spy'] + self.agents[agent_superior_1]['resistance'] ):
+                agent_superior_2 = agent_superior_1
+                agent_superior_1 = agent
+            else:
+                agent_superior_2 = agent
+                
             
             print("\n")
             print(agent, "\n", agent.genetics, "\n", agent.penalties, "\n", self.agents[agent]['resistance'], "\n", self.agents[agent]['spy'])
         
         print("\n", "#" * 50, "\n")
+
+        print("#1: ", agent_superior_1)
+        print("#2: ", agent_superior_2)
+
 
         
 def debug_log_setup():
