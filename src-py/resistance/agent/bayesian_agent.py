@@ -238,8 +238,9 @@ class BayesianAgent(Agent):
 
 
         # COLLUSION MODULE : WARNING PLAY OUTSIDE THE SPIRIT OF THE GAME USING
-        #                    EX ANTE COLLUSION. MUST BE SWITCHED ON PRIOR TO THE
-        #                    GAME BEING STARTED
+        #                    EX ANTE COLLUSION. SHOULD BE SWITCHED ON PRIOR TO THE
+        #                    GAME BEING STARTED. DOESN'T WORK WITH 2 BETRAYAL MISSIONS
+        #                    ATM.
         if self.collusion and len(spies_on_mission) > 1 and self.fails_required[self.number_of_players][self.current_round] == 1:
             
             # Lead spy (spy with max player number) will sabotage
@@ -250,7 +251,7 @@ class BayesianAgent(Agent):
                 return False
 
         # If player is burnt then unlikely on the mission but will always sabotage
-        # Inside random module to prevent intereference with COLLUSION MODULE
+        # Placed here to prevent intereference with COLLUSION MODULE
         if self.agent_assessments[self.player_number].burnt:
             return True
 
@@ -326,9 +327,14 @@ class BayesianAgent(Agent):
 
         # Use our initial distrust as a weight against further trust
         # If we trust them more the penalty will be less
+
+        #Likelihood the agent is a spy as seen by the agent
         p_spy = self.agent_assessments[agent].distrust_level
+
+        # Probability the agent betrayed the mission given he was on it
         p_betrayal = (betrayals / len(mission)) * p_spy
 
+        # Trus adjustment calculation
         trust_adjustment = p_betrayal * self.penalties.failed_mission
         self.agent_assessments[agent].mission_distrust += trust_adjustment
 
@@ -368,7 +374,7 @@ class BayesianAgent(Agent):
                                                                     self.agent_assessments[agent].proposal_distrust))
      
     def game_outcome(self, spies_win, spies):
-        '''Holds data for post game analysis'''
+        '''Assign data to variables for post game analysis'''
 
         # Post play metric information
         if (self.is_spy() and spies_win) or (not self.is_spy() and not spies_win):
@@ -388,11 +394,6 @@ class BayesianAgent(Agent):
                 incorrectly_identified_spies += 1
 
         self.correctly_identified_spies = correctly_identified_spies
-
-
-
-
-
 
 
 class Vote():
@@ -557,7 +558,8 @@ class TeamBuilder():
             if agent not in team and agent not in self.confirmed_spies:
                 continue
 
-            # Add the least suspect team members            
+            # Add the least suspect team members in order
+            # TODO - Ensure minimum spies are included        
             team.append(agent_trust[agent_number])
             agent_number += 1
 
