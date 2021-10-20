@@ -314,12 +314,12 @@ class BayesianAgent(Agent):
     def _sucessful_mission_trust_adjustment(self, agent, mission, betrayals):
         '''Trust players more on success'''
 
-        # We use a preconfigured number to determine how likely 
+        # We use the agents existing probability of being 
         # a spy to allow a mission to succeed in conjunction with the 
         # current round.  
-        p_success_spy = 1 - self.genetics.distrust 
+        p_success_spy = 1 - self.agent_assessments[agent].distrust_level
         trust_adjustment = p_success_spy * self.penalties.failed_mission
-        self.agent_assessments[agent].mission_distrust -= trust_adjustment #* 0.8
+        self.agent_assessments[agent].mission_distrust -= trust_adjustment
 
     def _failed_mission_trust_adjustment(self, agent, mission, betrayals):
         '''Trus agents less on failure'''
@@ -401,8 +401,7 @@ class Vote():
     def __init__(self, voter, proposer, mission):
 
         self.voter = voter
-        self.genetics = voter.genetics
-
+        
         self.proposer = proposer
         self.mission = mission
 

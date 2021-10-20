@@ -50,11 +50,12 @@ class AgentPenalties():
         return "On Failed: {} | Propose Failed: {} | Aborting Vote: {} | Suspect Vote: {}".format(self.failed_mission, self.p_failed_mission, self.vote_fail, self.vote_spy)
 
 class AgentPredisposition():
-    '''Holds the agents predisposition for trust'''
+    '''Holds the level of trust for another agent starting with a default values
+    that are mutated as the game procedes'''
 
     def __init__(self, player_number):
         
-        self.number = player_number
+        self.number = player_number        
         
         # Start with complete trust
         self.distrust_level = 0.8
