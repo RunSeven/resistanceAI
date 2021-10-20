@@ -4,7 +4,9 @@ from agent import Agent
 import random
 
 
-class RandomAgent(Agent):
+
+
+class RandomAgent(Agent):        
     '''A sample implementation of a random agent in the game The Resistance'''
 
     def __init__(self, name='Rando'):
@@ -24,8 +26,7 @@ class RandomAgent(Agent):
         self.player_number = player_number
         self.spy_list = spy_list
 
-        logging.debug("{} ({}) IS A SPY {}".format(
-            self.player_number, self.__class__.__name__, self.is_spy()))
+        logging.debug("{} ({}) IS A SPY {}".format(self.player_number, self.__class__.__name__, self.is_spy()))
 
     def is_spy(self):
         '''
@@ -33,18 +34,18 @@ class RandomAgent(Agent):
         '''
         return self.player_number in self.spy_list
 
-    def propose_mission(self, team_size, betrayals_required=1):
+    def propose_mission(self, team_size, betrayals_required = 1):
         '''
         expects a team_size list of distinct agents with id between 0 (inclusive) and number_of_players (exclusive)
         to be returned. 
         betrayals_required are the number of betrayals required for the mission to fail.
         '''
         team = []
-        while len(team) < team_size:
+        while len(team)<team_size:
             agent = random.randrange(team_size)
             if agent not in team:
                 team.append(agent)
-        return team
+        return team        
 
     def vote(self, mission, proposer):
         '''
@@ -56,8 +57,7 @@ class RandomAgent(Agent):
 
         vote_value = random.random() < 0.5
 
-        logging.debug("RANDOM AGENT {} VOTING {}".format(
-            self.player_number, vote_value))
+        logging.debug("RANDOM AGENT {} VOTING {}".format(self.player_number, vote_value))
 
         return vote_value
 
@@ -69,7 +69,7 @@ class RandomAgent(Agent):
         votes is a dictionary mapping player indexes to Booleans (True if they voted for the mission, False otherwise).
         No return value is required or expected.
         '''
-        # nothing to do here
+        #nothing to do here
         pass
 
     def betray(self, mission, proposer):
@@ -82,8 +82,7 @@ class RandomAgent(Agent):
         '''
 
         betrayal_status = random.random() < 0.3
-        logging.debug("RANDOM AGENT {} BETRAYAL {}".format(
-            self.player_number, betrayal_status))
+        logging.debug("RANDOM AGENT {} BETRAYAL {}".format(self.player_number, betrayal_status))
 
         if self.is_spy():
             return betrayal_status
@@ -106,9 +105,9 @@ class RandomAgent(Agent):
         rounds_complete, the number of rounds (0-5) that have been completed
         missions_failed, the numbe of missions (0-3) that have failed.
         '''
-        # nothing to do here
+        #nothing to do here
         pass
-
+    
     def game_outcome(self, spies_win, spies):
         '''
         basic informative function, where the parameters indicate:
@@ -118,3 +117,6 @@ class RandomAgent(Agent):
         if self.player_number == 0:
             logging.debug("SPIES WIN: {}  SPIES WERE: {}\n".format(spies_win,
                                                                    str(spies)))
+
+
+

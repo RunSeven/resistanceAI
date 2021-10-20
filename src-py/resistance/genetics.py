@@ -32,7 +32,7 @@ class AgentGenetics():
 class AgentPenalties():
     '''Holds the penalty values for actions taken by players'''
 
-    def __init__(self, failed_mission=0.1, p_failed_mission=0.05, vote_fail=0.3, vote_spy=0.05):
+    def __init__(self, failed_mission=0.1, p_failed_mission=0.05, vote_fail=0.3, vote_spy=0.05, propose_suspect=0.05):
         '''Penalties for 
            Participiating in a Failed Mission: failed_mission
            Proposing a Failed Mission: p_failed_mission
@@ -43,6 +43,7 @@ class AgentPenalties():
         self.p_failed_mission = p_failed_mission
         self.vote_fail = vote_fail
         self.vote_spy = vote_spy
+        self.propose_suspect = propose_suspect
     
     def __repr__(self):
 
@@ -56,12 +57,17 @@ class AgentPredisposition():
         self.number = player_number
         
         # Start with complete trust
-        self.distrust_level = 0.5
+        self.distrust_level = 0.8
         self.burnt = False
 
         self.mission_distrust = 0.5
         self.vote_distrust = 0.1
         self.proposal_distrust = 0.2
+    
+    def __repr__(self):
+
+        return "MISSION DISTRUST: {} | VOTE_DISTRUST: {} | PROPOSAL_DISTRUST: {}".format(self.mission_distrust, self.vote_distrust, self.proposal_distrust)
+   
     
 
 class AgentOriginator():
@@ -78,22 +84,22 @@ class AgentOriginator():
         name = 'X_{}'.format(random.randint(0, 10000))
         return seed_agent(name, genetics, penalties)
     
-    def evolve(self, agent):
-        '''Takes each of the values in genetics and muttes them slightly
-        using the mutations to build a new agent'''
+        def evolve(self, agent):
+            '''Takes each of the values in genetics and muttes them slightly
+            using the mutations to build a new agent'''
 
-        genetics = agent.genetics
+            genetics = agent.genetics
 
-        distrust = self._mutate_gene(genetics.distrust)
-        vote = self._mutate_gene(genetics.vote)
-        betray = self._mutate_gene(genetics.betray)
+            distrust = self._mutate_gene(genetics.distrust)
+            vote = self._mutate_gene(genetics.vote)
+            betray = self._mutate_gene(genetics.betray)
 
-        mutations = AgentGenetics(distrust, vote, betray)
+            mutations = AgentGenetics(distrust, vote, betray)
 
-        mutation_time = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
-        mutation_id = 'M_{}'.format(mutation_time)
+            mutation_time = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
+            mutation_id = 'M_{}'.format(mutation_time)
 
-        return self.seed_agent(mutation_id, mutations)
+            return self.seed_agent(mutation_id, mutations)
 
     def _seed_genetics(self):
         '''Creates the initial values of the AgentGenetics'''

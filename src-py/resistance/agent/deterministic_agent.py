@@ -206,7 +206,7 @@ class DeterministicAgent(Agent):
 
         # Ensure that resistance don't accidentally betray the mission
         if not self.is_spy():
-            logging.debug("NOT A SPY: ", self.player_number)
+            #logging.debug("NOT A SPY: ", self.player_number)
             return False
 
         # Setup betrayal space
@@ -293,48 +293,6 @@ class DeterministicAgent(Agent):
             logging.debug("SPIES BURNED THEMSELVES in ROUND {} : {}".format(self.current_round, str(self._get_burnt_spies())))
             return
 
-        # Update probabilities
-        for agent in mission:
-
-            # Never change trust of burnt agents
-            if self.agent_assessments[agent].distrust_level == 1.0:
-                continue
-
-            if mission_success:
-
-                # P(spy | success) = P(success | spy) * P(spy) / P(success)
-
-                p_success_spy = 0.3
-                p_spy = self.agent_assessments[agent].distrust_level
-
-                p_success_resistance = 1.0
-                p_resistance = 1.0 - p_spy
-
-                p_success = p_success_spy * p_spy + p_success_resistance + p_success_resistance * p_resistance
-
-                distrust_level = (p_success_spy * p_spy) / p_success
-
-                if distrust_level < 0.0 or distrust_level > 1.0:
-                    message = "P(PASS g. RESISTANCE) : {} | P(RESISTANCE) : {} | P(PASS) : {}".format(p_success_spy, p_spy, p_success)
-                    raise BadProbabilityException(message)
-
-                self.agent_assessments[agent].distrust_level = distrust_level
-
-            else:
-
-                p_fail_spy = 0.7
-                p_spy = self.agent_assessments[agent].distrust_level
-                p_fail = p_fail_spy * p_spy
-
-                distrust_level = (p_fail_spy * p_spy) / p_fail
-
-                if distrust_level < 0.0 or distrust_level > 1.0:
-                    message = "ROUND {}  |  P(FAIL g. SPY) : {} | P(SPY) : {} | P(FAIL) : {} ==> {}".format(self.current_round, p_fail_spy, p_spy, p_fail, distrust_level)
-                    raise BadProbabilityException(message)
-
-                self.agent_assessments[agent].distrust_level = (0.7 * self._calculate_initial_spy_probability()) / ((self.current_round + 1) / 5)
-
-
         # Update the agent depending on role
         if self.is_spy():
             self._spy_mission_outcome(mission, betrayals, mission_success)
@@ -364,8 +322,6 @@ class DeterministicAgent(Agent):
         '''Update rounds and mission failures'''
         self.current_round = rounds_complete
         self.missions_failed = missions_failed
-
-        logging.debug("AGENT {} ASSESSMENTS: {}".format(self.player_number, str({agent_number: self.agent_assessments[agent_number].distrust_level for agent_number in self.agent_assessments})))
 
     def game_outcome(self, spies_win, spies):
         '''This shouldn't matter to Reflex Agent'''

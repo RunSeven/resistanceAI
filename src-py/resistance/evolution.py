@@ -21,13 +21,18 @@ class AgentWorld():
         self.agents = dict()
 
 
-    def genesis(self, agent_generator, number_of_players):
+    def genesis(self, agent_generator, number_of_players, agents=dict()):
+        '''Genesis uses an agent generator to generate new agents based on the
+        number of players.  Agents can be brought into the world using the agents
+        input but defaults to a new world empty of agents'''
+
+        self.agents = dict()
 
         if number_of_players < 5 or number_of_players > 10:
             raise Exception("Invalid Player Range")
 
         while len(self.agents) < number_of_players:
-            self.agents[agent_generator.create(BayesianAgent)] = {'resistance': 0, 'spy': 0}
+            self.agents[agent_generator.create(BayesianAgent)] = {'resistance': 0, 'spy': 0, 'spies_found': 0}
         
         for agent in self.agents:
             logging.debug("GENETICS: {}".format(str(agent.genetics)))
@@ -48,6 +53,8 @@ class AgentWorld():
                     continue
                 
                 self.agents[agent]['resistance'] += 1
+            
+            self.agents[agent]['spies_found'] += agent.correctly_identified_spies
                 
     
     def trial_of_the_champions(self, number=1000):
@@ -56,7 +63,7 @@ class AgentWorld():
         for simulation in range(0, number):
             self.run_single_game()
 
-        print("\n", "#" * 50)
+        #print("\n", "#" * 50)
 
         agent_superior_1 = None
         agent_superior_2 = None
@@ -70,13 +77,16 @@ class AgentWorld():
                 agent_superior_2 = agent
                 
             
-            print("\n")
-            print(agent, "\n", agent.genetics, "\n", agent.penalties, "\n", self.agents[agent]['resistance'], "\n", self.agents[agent]['spy'])
+            #print("\n")            
+            #print(agent, "\n", agent.genetics, "\n", agent.penalties, "\n", self.agents[agent]['resistance'], "\n", self.agents[agent]['spy'])
         
-        print("\n", "#" * 50, "\n")
+        #print("\n", "#" * 50, "\n")
+        total_wins_1 = self.agents[agent_superior_1]['resistance'] + self.agents[agent_superior_1]['spy']
+        #print("#2: ", agent_superior_1, " : ", total_wins_1)
+        total_wins_2 = self.agents[agent_superior_2]['resistance'] + self.agents[agent_superior_2]['spy']
+        #print("#2: ", agent_superior_2, " : ", total_wins_2)
 
-        print("#1: ", agent_superior_1)
-        print("#2: ", agent_superior_2)
+        return total_wins_1, self.agents[agent_superior_1]['resistance'], self.agents[agent_superior_1]['spy'], self.agents[agent_superior_1]['spies_found'], agent_superior_1
 
 
         
@@ -87,10 +97,50 @@ def debug_log_setup():
         level=logging.DEBUG,
         filemode='w')
 
+
+def brute_force_selection():
+
+    #debug_log_setup()
+
+    agent_generator = AgentOriginator()
+
+    world = AgentWorld()
+
+    prev_best_agent = None
+    prev_best_catcher = None
+    last_total_wins = 0
+    total_wins = 0
+    resistance_wins = 0
+    agent = None
+    last_spies_found = 0
+    spies_found = 0
+    while total_wins < 80:
+
+        agents = dict()
+        if prev_best_agent != None:
+            agents[prev_best_agent] = {'resistance': 0, 'spy': 0, 'spies_found': 0}
+            agents[prev_best_catcher] = {'resistance': 0, 'spy': 0, 'spies_found': 0}
+
+        world.genesis(agent_generator, 5, agents)
+
+        total_wins, resistance_wins, spy_wins, spies_found, agent = world.trial_of_the_champions(100)
+
+        if last_total_wins < total_wins:
+            last_total_wins = total_wins            
+            prev_best_agent = agent
+            print("\nWINNER UPDATE")
+            print(agent, "\n", agent.genetics, "\n", agent.penalties, "\nResistance Wins", resistance_wins, "\nSpy Wins: ", spy_wins, "\nTotal Wins: ", total_wins, "\nSpies FOund: ", spies_found)
+        
+        if last_spies_found < spies_found:
+            last_spies_found = spies_found      
+            prev_best_catcher = agent
+            print("\nSPY CATCHER UPDATE")
+            print(agent, "\n", agent.genetics, "\n", agent.penalties, "\nResistance Wins", resistance_wins, "\nSpy Wins: ", spy_wins, "\nTotal Wins: ", total_wins, "\nSpies FOund: ", spies_found)
+
 def main():
     '''Starter function'''
 
-    #debug_log_setup()
+    debug_log_setup()
 
     agent_generator = AgentOriginator()
 
@@ -98,8 +148,6 @@ def main():
     world.genesis(agent_generator, 5)
     world.trial_of_the_champions(100)
 
-    
-
 
 if __name__ == '__main__':
-    main()
+    brute_force_selection()

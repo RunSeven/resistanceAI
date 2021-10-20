@@ -6,6 +6,7 @@ playing against each other.  This involves
 '''
 
 # Standard Modules
+import csv
 import logging
 import random
 
@@ -80,6 +81,45 @@ class AgentTester():
 
         print("RESISTANCE SUCCESS RATE: ", round((wins/self.number_of_games) * 100, 3), "%")
 
+        return wins
+    
+
+    def test_colluding_single_class(self, game_type, agent_class):
+
+        wins = 0
+        squad_creator = SquadCreator()
+        for i in range(0, self.number_of_games):
+            agents = self.squad_creator.create_collusive_single_agent_squad(agent_count, agent_class)
+
+            logging.debug("\n\nNEW GAME ({}) {}".format(game_type.__name__, i))
+
+            game = AllocatedAgentsGame(agents)
+            game.allocate_spies_randomly()
+
+            wins += self._play_game(game, agents)
+
+        print("RESISTANCE SUCCESS RATE: ", round((wins/self.number_of_games) * 100, 3), "%")
+
+        return wins
+    
+
+    def test_colluding_classes_by_type(self, game_type, resistance_class, spy_class):
+
+        wins = 0
+        for i in range(0, self.number_of_games):
+            agents = self.squad_creator.create_collusion_with_agent_defined_roles(agent_count, resistance_class, spy_class)
+
+            logging.debug("\n\nNEW GAME ({}) {}".format(game_type.__name__, i))
+
+            game = AllocatedAgentsGame(agents)
+            game.allocate_spies_by_type(spy_class)
+
+            wins += self._play_game(game, agents)
+
+        print("RESISTANCE SUCCESS RATE: ", round((wins/self.number_of_games) * 100, 3), "%")
+
+        return wins
+
 
     def test_classes_by_type(self, game_type, resistance_class, spy_class):
 
@@ -95,6 +135,8 @@ class AgentTester():
             wins += self._play_game(game, agents)
 
         print("RESISTANCE SUCCESS RATE: ", round((wins/self.number_of_games) * 100, 3), "%")
+
+        return wins
 
 
     def test_classes_by_selected_spy(self, custom_class, is_spy, resistance_class, spy_class):
@@ -123,6 +165,8 @@ class AgentTester():
         logging.info("RESISTANCE SUCCESS RATE: " + str(round((wins/self.number_of_games) * 100, 3)) + "%")
         print("RESISTANCE SUCCESS RATE: ", round((wins/self.number_of_games) * 100, 3), "%")
 
+        return wins
+
 
 class SquadCreator():
     '''Creates the group of agents to undertake resistance work'''
@@ -150,18 +194,7 @@ class SquadCreator():
 
     def create_single_agent_squad(self, agent_count, single_agent):
 
-        agents = []
-
-        if RandomAgent().__class__.__bases__[0].__name__ != 'Agent':
-            message = "{} does not appear to be a valid Agent".format(single_agent)
-            raise InvalidAgentException(message)
-
-        for i in range(0, agent_count):
-
-            agent_id = 'X_{}'.format(i)
-            agents.append(single_agent(name=agent_id))
-
-        return agents
+        return self.create_with_agent_defined_roles(agent_count, single_agent, single_agent)
 
     def replace_single_agent_in_squad(self, custom_agent, agent_count, is_spy, resistance_agent=RandomAgent, spy_agent=RandomAgent):
         '''Replaces either a single spy or a single resistance member in a previously
@@ -182,6 +215,28 @@ class SquadCreator():
 
         return agents
 
+    def create_collusive_single_agent_squad(self, agent_count, single_agent=DeterministicAgent):
+
+        agents = self.create_single_agent_squad(agent_count, single_agent)
+
+        for agent in agents:
+
+            if 'collusion' in agent.__class__.__dict__:
+                agent.collusion_mode_on()
+
+        return agents
+    
+    def create_collusion_with_agent_defined_roles(self, agent_count, resistance_agent=DeterministicAgent, spy_agent=DeterministicAgent):
+
+        agents = self.create_with_agent_defined_roles(agent_count, resistance_agent, spy_agent)
+
+        for agent in agents:
+
+            if 'collusion' in agent.__class__.__dict__:
+                agent.collusion_mode_on()
+
+        return agents
+
 
 def debug_log_setup():
 
@@ -195,17 +250,77 @@ class InvalidAgentException(Exception):
     '''Raise when something is passed to an agent creator that is not derived
     from the Agent class'''
 
+
+def summarise():
+
+    agent_models = {
+        "RANDOM": RandomAgent, 
+        "DETERMINISTIC": DeterministicAgent, 
+        "BAYESIAN": BayesianAgent
+        }
+    
+    n_player_outcomes = list()
+    
+    for primary_agent in agent_models.keys():
+
+        agent_type_outcomes = dict()
+
+        print("\nALL {} AGENTS".format(primary_agent))
+        homogenous_label = "all_{}".format(primary_agent) 
+        agent_type_outcomes[homogenous_label] = tester.test_single_class(Game, agent_models[primary_agent])
+
+        for secondary_agent in agent_models.keys():
+
+            if primary_agent == secondary_agent:
+                continue
+            
+            a_vs_b = "{}_resistance_vs_{}_spies".format(primary_agent, secondary_agent) 
+            print("\n{} RESISTANCE VS {} SPIES".format(
+                primary_agent,
+                secondary_agent
+            ))
+            agent_type_outcomes[a_vs_b] = tester.test_classes_by_type(Game, agent_models[primary_agent], agent_models[secondary_agent])
+
+            single_spy = "single_{}_spy_amongst_{}_agents".format(primary_agent, secondary_agent)
+            print("\nSINGLE {} SPY AMONGST {} AGENTS".format(primary_agent, secondary_agent))            
+            agent_type_outcomes[single_spy] = tester.test_classes_by_selected_spy(agent_models[primary_agent], True, RandomAgent, RandomAgent)
+
+            single_resistance = "single_{}_resistance_amongst_{}_agents".format(primary_agent, secondary_agent)
+            print("\nSINGLE {} RESISTANCE AMONGST {} AGENTS".format(primary_agent, secondary_agent))            
+            agent_type_outcomes[single_resistance] = tester.test_classes_by_selected_spy(DeterministicAgent, False, RandomAgent, RandomAgent)
+
+            # Random can't collude
+            if secondary_agent == 'RANDOM':
+                continue
+            
+            single_resistance_vs_colluding = "single_{}_resistance_amongst_colluding_{}_agents".format(primary_agent, secondary_agent)
+            print("\n{} RESISTANCE VS COLLUDING {} SPIES".format(primary_agent, secondary_agent))            
+            agent_type_outcomes[single_resistance_vs_colluding] = tester.test_colluding_classes_by_type(
+                Game, 
+                agent_models[primary_agent], 
+                agent_models[secondary_agent])
+        
+        n_player_outcomes.append(agent_type_outcomes)
+        
+    return n_player_outcomes
+
+
 if __name__ == '__main__':
 
     #debug_log_setup()
-    tester = AgentTester(100)
+    tester = AgentTester(1000)
 
     print("\n" + "#" * 50 + "\n")
+
+    mission_outcomes = dict()
 
     for agent_count in range(5, 11):
 
         print("\nRUNNING GAMES OF {} PLAYERS".format(agent_count))
         logging.debug("\n\nRUNNING GAMES OF {} PLAYERS".format(agent_count))
+
+        mission_outcomes[agent_count] = summarise()
+        
 
         '''# Test RandomAgent Success/Fail
         print("\nALL RANDOM AGENTS")
@@ -217,6 +332,11 @@ if __name__ == '__main__':
         logging.debug("\nALL DETERMINISTIC AGENTS")
         tester.test_single_class(Game, DeterministicAgent)
 
+        # Test RandomAgent Success/Fail
+        print("\nALL BAYESIAN AGENTS")
+        logging.debug("\nALL BAYESIAN AGENTS")
+        tester.test_single_class(Game, BayesianAgent)
+
         # Test DeterministicAgent vs RandomAgent Success/Fail
         print("\nDETERMINISTIC (RES) VS RANDOM (SPY) AGENTS")
         logging.debug("\nDETERMINISTIC (RES) VS RANDOM (SPY) AGENTS")
@@ -227,6 +347,16 @@ if __name__ == '__main__':
         logging.debug("\nRANDOM (RES) VS DETERMINISTIC (SPY) AGENTS")
         tester.test_classes_by_type(Game, RandomAgent, DeterministicAgent)
 
+        # Test BayesianAgent vs RandomAgent Success/Fail
+        print("\nBAYESIAN (RES) VS RANDOM (SPY) AGENTS")
+        logging.debug("\nBAYESIAN (RES) VS RANDOM (SPY) AGENTS")
+        tester.test_classes_by_type(Game, BayesianAgent, RandomAgent)
+
+        # Test RandomAgent vs BayesianAgent Success/Fail
+        print("\nRANDOM (RES) VS BAYESIAN (SPY) AGENTS")
+        logging.debug("\nRANDOM (RES) VS nBAYESIAN (SPY) AGENTS")
+        tester.test_classes_by_type(Game, RandomAgent, BayesianAgent)
+
         # Single DETERMINISTIC Spy Amongst Random Agents
         print("\nSINGLE DETERMINISTIC SPY IN RANDOM")
         logging.debug("\nSINGLE DETERMINISTIC SPY IN RANDOM")
@@ -235,7 +365,17 @@ if __name__ == '__main__':
         # Single DETERMINISTIC Spy Amongst Random Agents
         print("\nSINGLE DETERMINISTIC RESISTANCE IN RANDOM")
         logging.debug("\nSINGLE DETERMINISTIC RESISTANCE IN RANDOM")
-        tester.test_classes_by_selected_spy(DeterministicAgent, False, RandomAgent, RandomAgent)'''
+        tester.test_classes_by_selected_spy(DeterministicAgent, False, RandomAgent, RandomAgent)
+
+        # Single Bayesian Spy Amongst Random Agents
+        print("\nSINGLE BAYESIAN SPY IN RANDOM")
+        logging.debug("\nSINGLE BAYESIAN SPY IN RANDOM")
+        tester.test_classes_by_selected_spy(BayesianAgent, True, RandomAgent, RandomAgent)
+
+        # Single Bayesian Spy Amongst Random Agents
+        print("\nSINGLE BAYESIAN RESISTANCE IN RANDOM")
+        logging.debug("\nSINGLE BAYESIAN RESISTANCE IN RANDOM")
+        tester.test_classes_by_selected_spy(BayesianAgent, False, RandomAgent, RandomAgent)
 
         # Test BayesianAgent vs DeterministicAgent Success/Fail
         print("\nBAYESIAN (RES) VS DETERMINISTIC (SPY) AGENTS")
@@ -247,5 +387,84 @@ if __name__ == '__main__':
         logging.debug("\nDETERMINISTIC (RES) VS BAYESIAN (SPY) AGENTS")
         tester.test_classes_by_type(Game, DeterministicAgent, BayesianAgent)
 
+        # Test RandomAgent Success/Fail
+        print("\nALL DETERMINISTIC AGENTS")
+        logging.debug("\nALL RANDOM AGENTS")
+        tester.test_single_class(Game, DeterministicAgent)
+
+        # Single Bayesian Spy Amongst Random Agents
+        print("\nSINGLE BAYESIAN SPY IN DETERMINISTIC")
+        logging.debug("\nSINGLE BAYESIAN SPY IN RANDOM")
+        tester.test_classes_by_selected_spy(BayesianAgent, True, DeterministicAgent, DeterministicAgent)
+
+        # Single Bayesian Spy Amongst Random Agents
+        print("\nSINGLE BAYESIAN RESISTANCE IN DETERMINISTIC")
+        logging.debug("\nSINGLE BAYESIAN RESISTANCE IN RANDOM")
+        tester.test_classes_by_selected_spy(BayesianAgent, False, DeterministicAgent, DeterministicAgent)
+
+        print("\nALL DETERMINISTIC AGENTS")
+        logging.debug("\nALL RANDOM AGENTS")
+        tester.test_single_class(Game, DeterministicAgent)
+
+        # Test RandomAgent Success/Fail
+        print("\nALL COLLUDING DETERMINISTIC AGENTS")
+        logging.debug("\nALL COLLUDING DETERMINISTIC AGENTS")
+        tester.test_colluding_single_class(Game, DeterministicAgent)
+
+        # Test RandomAgent Success/Fail
+        print("\nALL COLLUDING BAYESIAN AGENTS")
+        logging.debug("\nALL COLLUDING BAYESIAN AGENTS")
+        tester.test_colluding_single_class(Game, BayesianAgent)
+
+        # Test RandomAgent Success/Fail
+        print("\nBAYESIAN (RES) VS COLLUDING DETERMINISTIC (SPY) AGENTS")
+        logging.debug("\nBAYESIAN (RES) VS COLLUDING DETERMINISTIC (SPY) AGENTS")
+        tester.test_colluding_classes_by_type(Game, BayesianAgent, DeterministicAgent)
+
+        # Test RandomAgent Success/Fail
+        print("\nDETERMINISTIC (RES) VS COLLUDING BAYESIAN (SPY) AGENTS")
+        logging.debug("\nDETERMINISTIC (RES) VS COLLUDING BAYESIAN (SPY) AGENTS")
+        tester.test_colluding_classes_by_type(Game, DeterministicAgent, BayesianAgent)
+
+        # Test RandomAgent Success/Fail
+        print("\nBAYESIAN (RES) VS COLLUDING RANDOM (SPY) AGENTS")
+        logging.debug("\nBAYESIAN (RES) VS COLLUDING RANDOM (SPY) AGENTS")
+        tester.test_colluding_classes_by_type(Game, BayesianAgent, RandomAgent)
+
+        # Test RandomAgent Success/Fail
+        print("\nRANDOM (RES) VS COLLUDING BAYESIAN (SPY) AGENTS")
+        logging.debug("\nRANDOM (RES) VS COLLUDING BAYESIAN (SPY) AGENTS")
+        tester.test_colluding_classes_by_type(Game, RandomAgent, BayesianAgent)'''
+
 
         print("\n\n" + "#" * 50 + "\n")
+
+    with open("./logs/summary.csv", 'w') as file:
+
+        csv_writer = csv.writer(file)
+        csv_writer.writerow("game_type,5_players,6_players,7_players,8_players,9_players,10_players".split(','))
+
+        table = dict()
+        print(mission_outcomes.keys())
+
+        for agent_number in range(5, 11):
+            round_number = mission_outcomes[agent_number]
+            
+            for agent_type in range(0,3):
+                
+                for key in round_number[agent_type].keys():
+
+                    if key not in table:
+                        table[key] = list()
+
+                    table[key].append(round_number[agent_type][key])
+
+        print(table)       
+        for key in table.keys():
+            
+            row = table[key].copy()
+            row.insert(0, key)            
+            csv_writer.writerow(row)
+
+
+            
