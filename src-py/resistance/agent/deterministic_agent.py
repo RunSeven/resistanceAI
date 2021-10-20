@@ -5,11 +5,12 @@ Gameplay:
 
     Resistance: Remembers known spies and works against them.
                 Votes for players not known to have failed a mission.
-                Has equality counter for failed missions.
 
     Spy:        Increases likeliness of killing mission as rounds progress.
                 Increase negative votes as rounds progress.
-                Supports spies in votes more as
+                Supports spies in votes more as rounds progress.  Tries to bluff players
+                by skewing votes against resistance members that are associated 
+                with suspicous activity.
 """
 
 import random
@@ -17,7 +18,7 @@ import random
 from agent import Agent
 
 
-from genetics import AgentGenetics, AgentPenalties, AgentPredisposition
+from genetics import AgentPenalties, AgentPredisposition
 
 
 class DeterministicAgent(Agent):
@@ -40,7 +41,6 @@ class DeterministicAgent(Agent):
 
     # Probabilities
     agent_assessment = None
-    genetics = None
     penalties = None
 
     # Resistance Members to Frame
@@ -53,12 +53,6 @@ class DeterministicAgent(Agent):
         self.spy = False
         self.missions_failed = 0
         self.current_round = 0
-
-        # Set values on how the agent reacts to events
-        if isinstance(genetics, AgentGenetics):            
-            self.genetics = genetics
-        else:
-            self.genetics = AgentGenetics()
 
         if isinstance(penalties, AgentPenalties):
             self.penalties = penalties
@@ -156,9 +150,7 @@ class DeterministicAgent(Agent):
         return voting.resistance_vote()
 
     def vote_outcome(self, mission, proposer, votes):
-        '''Reflex agent cannot deal with '''
-
-        mission_go_ahead = len(votes) >= self.number_of_players / 2
+        '''Look for obvious suspicous activity'''
 
         # Anyone that votes for burnt agents is a spy
         if any([agent for agent in mission if agent in self._get_burnt_spies()]):

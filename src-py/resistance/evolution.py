@@ -7,7 +7,6 @@ import logging
 
 from custom_games import AllocatedAgentsGame
 
-from genetics import AgentGenetics
 from genetics import AgentOriginator
 
 from agent.bayesian_agent import BayesianAgent
@@ -33,9 +32,6 @@ class AgentWorld():
 
         while len(self.agents) < number_of_players:
             self.agents[agent_generator.create(BayesianAgent)] = {'resistance': 0, 'spy': 0, 'spies_found': 0}
-        
-        for agent in self.agents:
-            logging.debug("GENETICS: {}".format(str(agent.genetics)))
 
     def run_single_game(self):
         '''Run a single instance of a game'''
@@ -76,10 +72,7 @@ class AgentWorld():
             else:
                 agent_superior_2 = agent
                 
-            
-            #print("\n")            
-            #print(agent, "\n", agent.genetics, "\n", agent.penalties, "\n", self.agents[agent]['resistance'], "\n", self.agents[agent]['spy'])
-        
+
         #print("\n", "#" * 50, "\n")
         total_wins_1 = self.agents[agent_superior_1]['resistance'] + self.agents[agent_superior_1]['spy']
         #print("#2: ", agent_superior_1, " : ", total_wins_1)
@@ -129,14 +122,12 @@ def brute_force_selection():
             last_total_wins = total_wins            
             prev_best_agent = agent
             print("\nWINNER UPDATE")
-            print(agent, "\n", agent.genetics, "\n", agent.penalties, "\nResistance Wins", resistance_wins, "\nSpy Wins: ", spy_wins, "\nTotal Wins: ", total_wins, "\nSpies FOund: ", spies_found)
         
         if last_spies_found < spies_found:
             last_spies_found = spies_found      
             prev_best_catcher = agent
             print("\nSPY CATCHER UPDATE")
-            print(agent, "\n", agent.genetics, "\n", agent.penalties, "\nResistance Wins", resistance_wins, "\nSpy Wins: ", spy_wins, "\nTotal Wins: ", total_wins, "\nSpies FOund: ", spies_found)
-
+        
 def main():
     '''Starter function'''
 

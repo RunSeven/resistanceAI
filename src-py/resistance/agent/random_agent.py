@@ -1,3 +1,9 @@
+'''
+Random Agent
+
+Random Agent is as provided with some minor changes made for logging event information.
+'''
+
 
 import logging
 from agent import Agent
