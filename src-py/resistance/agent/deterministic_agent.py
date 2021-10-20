@@ -208,13 +208,14 @@ class DeterministicAgent(Agent):
         
 
         # COLLUSION MODULE : WARNING PLAY OUTSIDE THE SPIRIT OF THE GAME USING
-        #                    EX ANTE COLLUSION. MUS BE SWITCHED ON PRIOR TO THE
+        #                    EX ANTE COLLUSION. MUST BE SWITCHED ON PRIOR TO THE
         #                    GAME BEING STARTED
         if self.collusion and len(spies_on_mission) > 1 and self.fails_required[self.number_of_players][self.current_round] == 1:
             
-            # If player is 'max(spies_on_mission)' they will sabotage otherwise they won't
+            # Lead spy (spy with max player number) will sabotage
             if self.player_number == max(spies_on_mission):
                 return True
+            # All other spies may avoid sabotage as they know the lead spy will sabotage
             else:
                 return False
 
