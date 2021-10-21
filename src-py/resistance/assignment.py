@@ -44,8 +44,8 @@ FAILS_REQUIRED = {
 
 
 class AgentTester():
-    '''Tests Agents in various ways by runnings tests, allocating
-    agents to different roles etc.'''
+    '''Tests Agents by running games of various sizes against with preconfigured setups
+    to determine the how well agents work in different scenarios.'''
 
     number_of_games = None
     squad_creator = None
@@ -56,6 +56,7 @@ class AgentTester():
         self.squad_creator = SquadCreator()
 
     def _play_game(self, game, agents):
+        '''Play a game with a preconfigured agent'''
 
         game.play()
         success = game.missions_lost < 3
@@ -65,15 +66,14 @@ class AgentTester():
 
         return 0
 
-    def test_single_class(self, game_type, agent_class):
+    def test_single_class(self, agent_class):
+        '''Play a game using a single agent type as both spies and resistance'''
 
         wins = 0
         squad_creator = SquadCreator()
         for i in range(0, self.number_of_games):
             agents = self.squad_creator.create_with_agent_defined_roles(agent_count, agent_class, agent_class)
 
-            logging.debug("\n\nNEW GAME ({}) {}".format(game_type.__name__, i))
-
             game = AllocatedAgentsGame(agents)
             game.allocate_spies_randomly()
 
@@ -84,15 +84,14 @@ class AgentTester():
         return wins
     
 
-    def test_colluding_single_class(self, game_type, agent_class):
+    def test_colluding_single_class(self, agent_class):
+        '''Play a game with a single agent type in which the spies have implemented collusion'''
 
         wins = 0
         squad_creator = SquadCreator()
         for i in range(0, self.number_of_games):
             agents = self.squad_creator.create_collusive_single_agent_squad(agent_count, agent_class)
 
-            logging.debug("\n\nNEW GAME ({}) {}".format(game_type.__name__, i))
-
             game = AllocatedAgentsGame(agents)
             game.allocate_spies_randomly()
 
@@ -102,15 +101,15 @@ class AgentTester():
 
         return wins
     
-    def test_randomly_colluding_single_class(self, game_type, collusion_probability, agent_class):
+    def test_randomly_colluding_single_class(self, collusion_probability, agent_class):
+        '''Play a game where collusion is on only for some of the agents depending on the provided probability that they
+        will collude'''
 
         wins = 0
         squad_creator = SquadCreator()
         for i in range(0, self.number_of_games):
             agents = self.squad_creator.create_random_collusion_with_agent_defined_roles(agent_count, collusion_probability, agent_class, agent_class)
 
-            logging.debug("\n\nNEW GAME ({}) {}".format(game_type.__name__, i))
-
             game = AllocatedAgentsGame(agents)
             game.allocate_spies_randomly()
 
@@ -121,13 +120,11 @@ class AgentTester():
         return wins
     
 
-    def test_colluding_classes_by_type(self, game_type, resistance_class, spy_class):
+    def test_colluding_classes_by_type(self, resistance_class, spy_class):
 
         wins = 0
         for i in range(0, self.number_of_games):
             agents = self.squad_creator.create_collusion_with_agent_defined_roles(agent_count, resistance_class, spy_class)
-
-            logging.debug("\n\nNEW GAME ({}) {}".format(game_type.__name__, i))
 
             game = AllocatedAgentsGame(agents)
             game.allocate_spies_by_type(spy_class)
@@ -138,7 +135,7 @@ class AgentTester():
 
         return wins
     
-    def test_randomly_colluding_classes_by_type(self, game_type, collusion_probability, resistance_class, spy_class):
+    def test_randomly_colluding_classes_by_type(self, collusion_probability, resistance_class, spy_class):
 
         wins = 0
         
@@ -157,13 +154,11 @@ class AgentTester():
         return wins
 
 
-    def test_classes_by_type(self, game_type, resistance_class, spy_class):
+    def test_classes_by_type(self, resistance_class, spy_class):
 
         wins = 0
         for i in range(0, self.number_of_games):
             agents = self.squad_creator.create_with_agent_defined_roles(agent_count, resistance_class, spy_class)
-
-            logging.debug("\n\nNEW GAME ({}) {}".format(game_type.__name__, i))
 
             game = AllocatedAgentsGame(agents)
             game.allocate_spies_by_type(spy_class)
@@ -229,6 +224,7 @@ class SquadCreator():
         return agents
 
     def create_single_agent_squad(self, agent_count, single_agent):
+        '''Create a squad with a single agent type.  Spies can be assigned randomly'''
 
         return self.create_with_agent_defined_roles(agent_count, single_agent, single_agent)
 
@@ -252,6 +248,7 @@ class SquadCreator():
         return agents
 
     def create_collusive_single_agent_squad(self, agent_count, single_agent=DeterministicAgent):
+        '''Create a squad of a single agent type in which the spies collude'''
 
         agents = self.create_single_agent_squad(agent_count, single_agent)
 
@@ -263,6 +260,7 @@ class SquadCreator():
         return agents
     
     def create_collusion_with_agent_defined_roles(self, agent_count, resistance_agent=DeterministicAgent, spy_agent=DeterministicAgent):
+        '''Create a squad where each agent type is allocated a specific type, either resistance or spy'''
 
         agents = self.create_with_agent_defined_roles(agent_count, resistance_agent, spy_agent)
 
@@ -274,6 +272,7 @@ class SquadCreator():
         return agents
     
     def create_random_collusion_with_agent_defined_roles(self, agent_count, collusion_probability, resistance_agent=DeterministicAgent, spy_agent=DeterministicAgent):
+        '''Create a squad with collusive spies in which the spies only act collusively with a pre-defined probability'''
 
         agents = self.create_with_agent_defined_roles(agent_count, resistance_agent, spy_agent)
 
@@ -347,7 +346,6 @@ def summarise():
                 resistance_vs_colluding = "{} Resistance amongst Colluding {} Spies".format(primary_agent, secondary_agent)
                 print("\n{} RESISTANCE VS COLLUDING {} SPIES".format(primary_agent, secondary_agent))            
                 agent_type_outcomes[resistance_vs_colluding] = tester.test_colluding_classes_by_type(
-                    Game, 
                     agent_models[primary_agent], 
                     agent_models[secondary_agent])
 
@@ -356,7 +354,6 @@ def summarise():
                     resistance_vs_randomly_colluding = "{} Resistance amongst ({}%) Colluding {} Spies".format(primary_agent, collusion_probability * 100, secondary_agent)
                     print("\n{} RESISTANCE VS  ({}%) COLLUDING {} SPIES".format(primary_agent, collusion_probability * 100, secondary_agent))            
                     agent_type_outcomes[resistance_vs_randomly_colluding] = tester.test_randomly_colluding_classes_by_type(
-                        Game,
                         collusion_probability,
                         agent_models[primary_agent], 
                         agent_models[secondary_agent])
@@ -370,7 +367,6 @@ def summarise():
                 resistance_vs_colluding = "{} Resistance amongst Colluding {} Spies".format(primary_agent, secondary_agent)
                 print("\n{} RESISTANCE VS COLLUDING {} SPIES".format(primary_agent, secondary_agent))            
                 agent_type_outcomes[resistance_vs_colluding] = tester.test_colluding_single_class(
-                    Game, 
                     agent_models[primary_agent])
                 
 
@@ -378,7 +374,6 @@ def summarise():
                     resistance_vs_randomly_colluding = "{} Resistance amongst ({}%) Colluding {} Spies".format(primary_agent, collusion_probability * 100, secondary_agent)
                     print("\n{} RESISTANCE VS  ({}%) COLLUDING {} SPIES".format(primary_agent, collusion_probability * 100, secondary_agent))            
                     agent_type_outcomes[resistance_vs_randomly_colluding] = tester.test_randomly_colluding_single_class(
-                        Game,
                         collusion_probability,
                         agent_models[primary_agent])
         
