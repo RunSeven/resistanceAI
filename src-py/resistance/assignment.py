@@ -102,12 +102,48 @@ class AgentTester():
 
         return wins
     
+    def test_randomly_colluding_single_class(self, game_type, collusion_probability, agent_class):
+
+        wins = 0
+        squad_creator = SquadCreator()
+        for i in range(0, self.number_of_games):
+            agents = self.squad_creator.create_random_collusion_with_agent_defined_roles(agent_count, collusion_probability, agent_class, agent_class)
+
+            logging.debug("\n\nNEW GAME ({}) {}".format(game_type.__name__, i))
+
+            game = AllocatedAgentsGame(agents)
+            game.allocate_spies_randomly()
+
+            wins += self._play_game(game, agents)
+
+        print("RESISTANCE SUCCESS RATE: ", round((wins/self.number_of_games) * 100, 3), "%")
+
+        return wins
+    
 
     def test_colluding_classes_by_type(self, game_type, resistance_class, spy_class):
 
         wins = 0
         for i in range(0, self.number_of_games):
             agents = self.squad_creator.create_collusion_with_agent_defined_roles(agent_count, resistance_class, spy_class)
+
+            logging.debug("\n\nNEW GAME ({}) {}".format(game_type.__name__, i))
+
+            game = AllocatedAgentsGame(agents)
+            game.allocate_spies_by_type(spy_class)
+
+            wins += self._play_game(game, agents)
+
+        print("RESISTANCE SUCCESS RATE: ", round((wins/self.number_of_games) * 100, 3), "%")
+
+        return wins
+    
+    def test_randomly_colluding_classes_by_type(self, game_type, collusion_probability, resistance_class, spy_class):
+
+        wins = 0
+        
+        for i in range(0, self.number_of_games):
+            agents = self.squad_creator.create_random_collusion_with_agent_defined_roles(agent_count, collusion_probability, resistance_class, spy_class)
 
             logging.debug("\n\nNEW GAME ({}) {}".format(game_type.__name__, i))
 
@@ -236,6 +272,21 @@ class SquadCreator():
                 agent.collusion_mode_on()
 
         return agents
+    
+    def create_random_collusion_with_agent_defined_roles(self, agent_count, collusion_probability, resistance_agent=DeterministicAgent, spy_agent=DeterministicAgent):
+
+        agents = self.create_with_agent_defined_roles(agent_count, resistance_agent, spy_agent)
+
+        for agent in agents:
+
+            if 'collusion' in agent.__class__.__dict__:
+
+                if random.random() < collusion_probability:
+                    agent.collusion_mode_on()
+                else:
+                    agent.collusion_mode_off()
+
+        return agents
 
 
 def debug_log_setup():
@@ -264,6 +315,7 @@ def summarise():
     for primary_agent in agent_models.keys():
 
         agent_type_outcomes = dict()
+        collusion_probabilities = [0.95, 0.8, 0.65, 0.5, 0.25]
 
         print("\nALL {} AGENTS".format(primary_agent))
         homogenous_label = "all_{}".format(primary_agent) 
@@ -271,34 +323,64 @@ def summarise():
 
         for secondary_agent in agent_models.keys():
 
-            if primary_agent == secondary_agent:
-                continue
+            if primary_agent != secondary_agent:
             
-            a_vs_b = "{}_resistance_vs_{}_spies".format(primary_agent, secondary_agent) 
-            print("\n{} RESISTANCE VS {} SPIES".format(
-                primary_agent,
-                secondary_agent
-            ))
-            agent_type_outcomes[a_vs_b] = tester.test_classes_by_type(Game, agent_models[primary_agent], agent_models[secondary_agent])
+                a_vs_b = "{} Resistance vs {} Spies".format(primary_agent, secondary_agent) 
+                print("\n{} RESISTANCE VS {} SPIES".format(
+                    primary_agent,
+                    secondary_agent
+                ))
+                agent_type_outcomes[a_vs_b] = tester.test_classes_by_type(Game, agent_models[primary_agent], agent_models[secondary_agent])
 
-            single_spy = "single_{}_spy_amongst_{}_spies".format(primary_agent, secondary_agent)
-            print("\nSINGLE {} SPY AMONGST {} AGENTS".format(primary_agent, secondary_agent))            
-            agent_type_outcomes[single_spy] = tester.test_classes_by_selected_spy(agent_models[primary_agent], True, RandomAgent, RandomAgent)
+                single_spy = "Single {} Spy amongst {} Spies".format(primary_agent, secondary_agent)
+                print("\nSINGLE {} SPY AMONGST {} AGENTS".format(primary_agent, secondary_agent))            
+                agent_type_outcomes[single_spy] = tester.test_classes_by_selected_spy(agent_models[primary_agent], True, RandomAgent, RandomAgent)
 
-            single_resistance = "single_{}_resistance_amongst_{}_spies".format(primary_agent, secondary_agent)
-            print("\nSINGLE {} RESISTANCE AMONGST {} AGENTS".format(primary_agent, secondary_agent))            
-            agent_type_outcomes[single_resistance] = tester.test_classes_by_selected_spy(DeterministicAgent, False, RandomAgent, RandomAgent)
+                single_resistance = "Single {} Resistance amongst {} Agents".format(primary_agent, secondary_agent)
+                print("\nSINGLE {} RESISTANCE AMONGST {} AGENTS".format(primary_agent, secondary_agent))            
+                agent_type_outcomes[single_resistance] = tester.test_classes_by_selected_spy(DeterministicAgent, False, RandomAgent, RandomAgent)
 
-            # Random can't collude
-            if secondary_agent == 'RANDOM':
-                continue
+                # Random can't collude
+                if secondary_agent == 'RANDOM':
+                    continue
+                
+                resistance_vs_colluding = "{} Resistance amongst Colluding {} Spies".format(primary_agent, secondary_agent)
+                print("\n{} RESISTANCE VS COLLUDING {} SPIES".format(primary_agent, secondary_agent))            
+                agent_type_outcomes[resistance_vs_colluding] = tester.test_colluding_classes_by_type(
+                    Game, 
+                    agent_models[primary_agent], 
+                    agent_models[secondary_agent])
+
+
+                for collusion_probability in collusion_probabilities:
+                    resistance_vs_randomly_colluding = "{} Resistance amongst ({}%) Colluding {} Spies".format(primary_agent, collusion_probability * 100, secondary_agent)
+                    print("\n{} RESISTANCE VS  ({}%) COLLUDING {} SPIES".format(primary_agent, collusion_probability * 100, secondary_agent))            
+                    agent_type_outcomes[resistance_vs_randomly_colluding] = tester.test_randomly_colluding_classes_by_type(
+                        Game,
+                        collusion_probability,
+                        agent_models[primary_agent], 
+                        agent_models[secondary_agent])
             
-            single_resistance_vs_colluding = "{}_resistance_amongst_colluding_{}_spies".format(primary_agent, secondary_agent)
-            print("\n{} RESISTANCE VS COLLUDING {} SPIES".format(primary_agent, secondary_agent))            
-            agent_type_outcomes[single_resistance_vs_colluding] = tester.test_colluding_classes_by_type(
-                Game, 
-                agent_models[primary_agent], 
-                agent_models[secondary_agent])
+            else:
+
+                # Random can't collude
+                if secondary_agent == 'RANDOM':
+                    continue
+
+                resistance_vs_colluding = "{} Resistance amongst Colluding {} Spies".format(primary_agent, secondary_agent)
+                print("\n{} RESISTANCE VS COLLUDING {} SPIES".format(primary_agent, secondary_agent))            
+                agent_type_outcomes[resistance_vs_colluding] = tester.test_colluding_single_class(
+                    Game, 
+                    agent_models[primary_agent])
+                
+
+                for collusion_probability in collusion_probabilities:
+                    resistance_vs_randomly_colluding = "{} Resistance amongst ({}%) Colluding {} Spies".format(primary_agent, collusion_probability * 100, secondary_agent)
+                    print("\n{} RESISTANCE VS  ({}%) COLLUDING {} SPIES".format(primary_agent, collusion_probability * 100, secondary_agent))            
+                    agent_type_outcomes[resistance_vs_randomly_colluding] = tester.test_randomly_colluding_single_class(
+                        Game,
+                        collusion_probability,
+                        agent_models[primary_agent])
         
         n_player_outcomes.append(agent_type_outcomes)
         
@@ -308,13 +390,10 @@ def summarise():
 if __name__ == '__main__':
     '''The main function plays games under various pre-configured setups as discussed
     in the project report.  The data is then saved into a CSV file foranalysis in the report.
-
-    NOTE:   Apologies for the circular dependency of this modules documentation on the report description and 
-            the report on this modules outputs.
     '''
 
     # Set up testing functions with the number of games to play
-    number_of_games = 1000
+    number_of_games = 100
     tester = AgentTester(number_of_games)
 
     # Mission Outcomes holds the information relating to each mission
@@ -325,13 +404,15 @@ if __name__ == '__main__':
     # Run through missions for the specified number of players
     for agent_count in range(5, 11):
 
+        print("\n\nPLAYING GAMES OF SIZE {}".format(agent_count))
+
         # Okay, so we aren't passing agent_outcome to anything...
         # I admit it is a global variable and I realised it too late
         # to fix without risking everything else.
         mission_outcomes[agent_count] = summarise()
 
     # Write to CSV for analysis
-    with open("./logs/summary.csv", 'w') as file:
+    with open("./logs/summary.csv", 'w', newline="\n") as file:
 
         csv_writer = csv.writer(file)
         csv_writer.writerow("game_type,5_players,6_players,7_players,8_players,9_players,10_players".split(','))
@@ -340,6 +421,7 @@ if __name__ == '__main__':
         print(mission_outcomes.keys())
 
         for agent_number in range(5, 11):
+            
             round_number = mission_outcomes[agent_number]
             
             for agent_type in range(0,3):

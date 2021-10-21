@@ -1,0 +1,58 @@
+game_type,5_players,6_players,7_players,8_players,9_players,10_players
+all_RANDOM,83,84,79,73,76,75
+RANDOM Resistance vs DETERMINISTIC Spies,5,9,19,13,20,12
+Single RANDOM Spy amongst DETERMINISTIC Spies,87,76,88,74,82,77
+Single RANDOM Resistance amongst DETERMINISTIC Agents,74,79,79,80,88,75
+RANDOM Resistance amongst Colluding DETERMINISTIC Spies,6,8,7,7,15,3
+RANDOM Resistance amongst (95.0%) Colluding DETERMINISTIC Spies,7,6,7,8,12,3
+RANDOM Resistance amongst (80.0%) Colluding DETERMINISTIC Spies,4,7,12,10,12,6
+RANDOM Resistance amongst (65.0%) Colluding DETERMINISTIC Spies,6,9,13,7,10,7
+RANDOM Resistance amongst (50.0%) Colluding DETERMINISTIC Spies,8,8,13,11,17,7
+RANDOM Resistance amongst (25.0%) Colluding DETERMINISTIC Spies,6,5,13,13,26,11
+RANDOM Resistance vs BAYESIAN Spies,1,7,2,4,10,9
+Single RANDOM Spy amongst BAYESIAN Spies,86,83,84,80,86,80
+Single RANDOM Resistance amongst BAYESIAN Agents,77,81,82,79,81,77
+RANDOM Resistance amongst Colluding BAYESIAN Spies,2,3,1,11,10,7
+RANDOM Resistance amongst (95.0%) Colluding BAYESIAN Spies,2,8,4,4,7,4
+RANDOM Resistance amongst (80.0%) Colluding BAYESIAN Spies,6,7,1,6,15,4
+RANDOM Resistance amongst (65.0%) Colluding BAYESIAN Spies,4,3,0,6,10,4
+RANDOM Resistance amongst (50.0%) Colluding BAYESIAN Spies,3,4,2,11,11,4
+RANDOM Resistance amongst (25.0%) Colluding BAYESIAN Spies,4,7,3,7,10,6
+all_DETERMINISTIC,13,16,30,24,21,16
+DETERMINISTIC Resistance vs RANDOM Spies,92,87,89,84,89,88
+Single DETERMINISTIC Spy amongst RANDOM Spies,32,37,64,46,60,56
+Single DETERMINISTIC Resistance amongst RANDOM Agents,81,85,82,85,88,76
+DETERMINISTIC Resistance amongst Colluding DETERMINISTIC Spies,2,2,11,3,15,0
+DETERMINISTIC Resistance amongst (95.0%) Colluding DETERMINISTIC Spies,3,4,4,2,10,3
+DETERMINISTIC Resistance amongst (80.0%) Colluding DETERMINISTIC Spies,4,3,13,5,19,7
+DETERMINISTIC Resistance amongst (65.0%) Colluding DETERMINISTIC Spies,4,6,20,5,15,6
+DETERMINISTIC Resistance amongst (50.0%) Colluding DETERMINISTIC Spies,13,11,21,13,19,7
+DETERMINISTIC Resistance amongst (25.0%) Colluding DETERMINISTIC Spies,15,14,28,23,23,21
+DETERMINISTIC Resistance vs BAYESIAN Spies,23,25,26,13,14,15
+Single DETERMINISTIC Spy amongst BAYESIAN Spies,32,39,59,53,54,47
+Single DETERMINISTIC Resistance amongst BAYESIAN Agents,73,78,84,84,84,70
+DETERMINISTIC Resistance amongst Colluding BAYESIAN Spies,5,7,2,0,4,0
+DETERMINISTIC Resistance amongst (95.0%) Colluding BAYESIAN Spies,12,11,4,2,1,1
+DETERMINISTIC Resistance amongst (80.0%) Colluding BAYESIAN Spies,14,3,5,2,3,4
+DETERMINISTIC Resistance amongst (65.0%) Colluding BAYESIAN Spies,17,11,12,4,5,4
+DETERMINISTIC Resistance amongst (50.0%) Colluding BAYESIAN Spies,20,22,13,3,11,6
+DETERMINISTIC Resistance amongst (25.0%) Colluding BAYESIAN Spies,23,16,23,10,7,16
+all_BAYESIAN,41,12,28,14,22,12
+BAYESIAN Resistance vs RANDOM Spies,93,92,93,94,96,87
+Single BAYESIAN Spy amongst RANDOM Spies,33,34,59,40,57,44
+Single BAYESIAN Resistance amongst RANDOM Agents,75,78,79,84,80,78
+BAYESIAN Resistance vs DETERMINISTIC Spies,41,24,55,39,48,49
+Single BAYESIAN Spy amongst DETERMINISTIC Spies,31,35,51,45,40,45
+Single BAYESIAN Resistance amongst DETERMINISTIC Agents,78,77,82,82,84,71
+BAYESIAN Resistance amongst Colluding DETERMINISTIC Spies,45,35,46,43,39,27
+BAYESIAN Resistance amongst (95.0%) Colluding DETERMINISTIC Spies,52,33,42,29,32,21
+BAYESIAN Resistance amongst (80.0%) Colluding DETERMINISTIC Spies,41,39,57,26,37,25
+BAYESIAN Resistance amongst (65.0%) Colluding DETERMINISTIC Spies,32,37,51,35,43,29
+BAYESIAN Resistance amongst (50.0%) Colluding DETERMINISTIC Spies,44,18,43,38,36,28
+BAYESIAN Resistance amongst (25.0%) Colluding DETERMINISTIC Spies,33,13,49,37,57,32
+BAYESIAN Resistance amongst Colluding BAYESIAN Spies,55,56,14,13,10,4
+BAYESIAN Resistance amongst (95.0%) Colluding BAYESIAN Spies,53,47,13,9,13,8
+BAYESIAN Resistance amongst (80.0%) Colluding BAYESIAN Spies,43,41,13,12,10,2
+BAYESIAN Resistance amongst (65.0%) Colluding BAYESIAN Spies,49,39,27,13,25,11
+BAYESIAN Resistance amongst (50.0%) Colluding BAYESIAN Spies,43,30,25,10,23,13
+BAYESIAN Resistance amongst (25.0%) Colluding BAYESIAN Spies,40,26,22,20,28,14

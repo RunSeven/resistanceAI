@@ -14,7 +14,7 @@ Gameplay:
 
 import random
 
-from genetics import AgentGenetics, AgentPenalties, AgentPredisposition
+from genetics import AgentPenalties, AgentPredisposition
 from agent import Agent
 
 
@@ -54,12 +54,6 @@ class BayesianAgent(Agent):
         self.spy = False
         self.missions_failed = 0
         self.current_round = 0
-
-        # Set values on how the agent reacts to events
-        if isinstance(genetics, AgentGenetics):            
-            self.genetics = genetics
-        else:
-            self.genetics = AgentGenetics()
 
         # Assign Penalties/Bonuses for adverse/positive actions
         if isinstance(penalties, AgentPenalties):
@@ -178,7 +172,7 @@ class BayesianAgent(Agent):
         # Anyone that votes for burnt agents is a spy
         if self.voting_round != 5 and any([agent for agent in mission if agent in self._get_burnt_spies()]):
 
-            self.agent_assessments[proposer].distrust_level = 1000
+            self.agent_assessments[proposer].distrust_level = 2.0
             self.agent_assessments[proposer].burnt = True
 
         # Award or penalise based on failing a round with the vote
@@ -276,7 +270,7 @@ class BayesianAgent(Agent):
                     else:
                         return False
 
-        # WHen in doubt, betray the mission
+        # When in doubt, betray the mission
         return True
 
     def mission_outcome(self, mission, proposer, betrayals, mission_success):
@@ -289,7 +283,7 @@ class BayesianAgent(Agent):
         if len(mission) == betrayals:
 
             for agent in mission:
-                self.agent_assessments[agent].distrust_level = 1000
+                self.agent_assessments[agent].distrust_level = 2.0
                 self.agent_assessments[agent].burnt = True
 
             return
@@ -331,7 +325,7 @@ class BayesianAgent(Agent):
         #Likelihood the agent is a spy as seen by the agent
         p_spy = self.agent_assessments[agent].distrust_level
 
-        # Probability the agent betrayed the mission given he was on it
+        # Probability the agent in question betrayed the mission
         p_betrayal = (betrayals / len(mission)) * p_spy
 
         # Trus adjustment calculation
@@ -339,6 +333,7 @@ class BayesianAgent(Agent):
         self.agent_assessments[agent].mission_distrust += trust_adjustment
 
     def _spy_mission_outcome(self, mission, betrayals, mission_success):
+        '''Update information for spy player where mision has failed''' 
 
         # Target a resistance member for vote blocking if
         # they could be suspect
@@ -347,13 +342,14 @@ class BayesianAgent(Agent):
             self.target_resistance.extend(targets)
 
     def _resistance_mission_outcome(self, mission, betrayals):
+        '''Update information for resistance player where mission has failed'''
 
         # Spies become known to a single resistance agent if all other players sabotage
         if self.player_number in mission and betrayals == len(mission) - 1:
             known_spies = [spy for spy in mission if spy != self.player_number]
 
             for agent in known_spies:
-                self.agent_assessments[agent].distrust_level = 1000
+                self.agent_assessments[agent].distrust_level = 2.0
 
     def round_outcome(self, rounds_complete, missions_failed):
         '''Update rounds and mission failures'''
@@ -368,7 +364,7 @@ class BayesianAgent(Agent):
         # Trust levels aggregated at the end of each round
         for agent in self.agent_assessments:
 
-            if self.agent_assessments[agent].distrust_level != 1000:
+            if self.agent_assessments[agent].distrust_level != 2.0:
                 self.agent_assessments[agent].distrust_level = sum((self.agent_assessments[agent].mission_distrust,
                                                                     self.agent_assessments[agent].vote_distrust,
                                                                     self.agent_assessments[agent].proposal_distrust))
@@ -408,7 +404,7 @@ class Vote():
 
         self.confirmed_spies = {agent: voter.agent_assessments[agent].distrust_level
                                 for agent in voter.agent_assessments
-                                if voter.agent_assessments[agent].distrust_level == 1000}
+                                if voter.agent_assessments[agent].distrust_level == 2.0}
 
     def spy_vote(self, missions_failed, target_resistance):
         '''Decide on voting if player is a spy'''
@@ -445,7 +441,7 @@ class Vote():
             return True
 
         # Proposer is known spy so don't trust them
-        if self.voter.agent_assessments[self.proposer].distrust_level == 1000:
+        if self.voter.agent_assessments[self.proposer].distrust_level == 2.0:
             return False
        
         # Only vote against a player if we think are a spy.
@@ -480,7 +476,7 @@ class TeamBuilder():
 
         self.confirmed_spies = [agent
                                 for agent in self.agent_assessments
-                                if self.agent_assessments[agent].distrust_level == 1000]
+                                if self.agent_assessments[agent].distrust_level == 2.0]
 
     def resistance_mission_proposal(self, team_size, number_of_spies):
         '''Propose teams as a resistance member.  Tries to minimise risk and maximise information

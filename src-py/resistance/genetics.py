@@ -89,11 +89,13 @@ class AgentOriginator():
             '''Takes each of the values in genetics and muttes them slightly
             using the mutations to build a new agent'''
 
-            genetics = agent.genetics
+            genetics = agent.penalties
 
-            distrust = self._mutate_gene(genetics.distrust)
-            vote = self._mutate_gene(genetics.vote)
-            betray = self._mutate_gene(genetics.betray)
+            distrust = self._mutate_gene(penalties.failed_mission)
+            vote = self._mutate_gene(penalties.p_failed_mission)
+            betray = self._mutate_gene(penalties.vote_fail)
+            betray = self._mutate_gene(penalties.vote_spy)
+            betray = self._mutate_gene(penalties.propose_suspect)
 
             mutations = AgentGenetics(distrust, vote, betray)
 
