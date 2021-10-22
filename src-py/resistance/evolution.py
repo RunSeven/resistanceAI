@@ -8,6 +8,7 @@ import logging
 from custom_games import AllocatedAgentsGame
 
 from genetics import AgentOriginator
+from assignment import AgentTester, SquadCreator
 
 from agent.bayesian_agent import BayesianAgent
 from agent.deterministic_agent import DeterministicAgent
@@ -32,7 +33,22 @@ class AgentWorld():
 
         while len(self.agents) < number_of_players:
             self.agents[agent_generator.create(BayesianAgent)] = {'resistance': 0, 'spy': 0, 'spies_found': 0}
+    
+    def training_ground(self, agent_count, agent_class, number_of_games=1000):
+        '''Train agent against Bayesian non-collusion'''
 
+        wins = 0
+        squad_creator = SquadCreator()
+        for i in range(0, self.number_of_games):
+
+            game = AllocatedAgentsGame(self.agents)
+            game.test_classes_by_selected_spy()
+
+            wins += self._play_game(game, agents)
+
+        print("RESISTANCE SUCCESS RATE: ", round((wins/self.number_of_games) * 100, 3), "%")
+
+        return wins
     def run_single_game(self):
         '''Run a single instance of a game'''
 
@@ -51,7 +67,8 @@ class AgentWorld():
                 self.agents[agent]['resistance'] += 1
             
             self.agents[agent]['spies_found'] += agent.correctly_identified_spies
-                
+
+               
     
     def trial_of_the_champions(self, number=1000):
         '''Run number of games and select the player with the most wins'''
