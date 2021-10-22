@@ -142,8 +142,6 @@ class AgentTester():
         for i in range(0, self.number_of_games):
             agents = self.squad_creator.create_random_collusion_with_agent_defined_roles(agent_count, collusion_probability, resistance_class, spy_class)
 
-            logging.debug("\n\nNEW GAME ({}) {}".format(game_type.__name__, i))
-
             game = AllocatedAgentsGame(agents)
             game.allocate_spies_by_type(spy_class)
 
@@ -316,9 +314,9 @@ def summarise():
         agent_type_outcomes = dict()
         collusion_probabilities = [0.95, 0.8, 0.65, 0.5, 0.25]
 
-        print("\nALL {} AGENTS".format(primary_agent))
-        homogenous_label = "all_{}".format(primary_agent) 
-        agent_type_outcomes[homogenous_label] = tester.test_single_class(Game, agent_models[primary_agent])
+        print("\nAll {} Agents".format(primary_agent))
+        homogenous_label = "All {} Agents".format(primary_agent) 
+        agent_type_outcomes[homogenous_label] = tester.test_single_class(agent_models[primary_agent])
 
         for secondary_agent in agent_models.keys():
 
@@ -329,15 +327,15 @@ def summarise():
                     primary_agent,
                     secondary_agent
                 ))
-                agent_type_outcomes[a_vs_b] = tester.test_classes_by_type(Game, agent_models[primary_agent], agent_models[secondary_agent])
+                agent_type_outcomes[a_vs_b] = tester.test_classes_by_type(agent_models[primary_agent], agent_models[secondary_agent])
 
-                single_spy = "Single {} Spy amongst {} Spies".format(primary_agent, secondary_agent)
+                single_spy = "Single {} Spy amongst {} Agents".format(primary_agent, secondary_agent)
                 print("\nSINGLE {} SPY AMONGST {} AGENTS".format(primary_agent, secondary_agent))            
-                agent_type_outcomes[single_spy] = tester.test_classes_by_selected_spy(agent_models[primary_agent], True, RandomAgent, RandomAgent)
+                agent_type_outcomes[single_spy] = tester.test_classes_by_selected_spy(agent_models[primary_agent], True, agent_models[secondary_agent], agent_models[secondary_agent])
 
                 single_resistance = "Single {} Resistance amongst {} Agents".format(primary_agent, secondary_agent)
                 print("\nSINGLE {} RESISTANCE AMONGST {} AGENTS".format(primary_agent, secondary_agent))            
-                agent_type_outcomes[single_resistance] = tester.test_classes_by_selected_spy(DeterministicAgent, False, RandomAgent, RandomAgent)
+                agent_type_outcomes[single_resistance] = tester.test_classes_by_selected_spy(agent_models[primary_agent], False, agent_models[secondary_agent], agent_models[secondary_agent])
 
                 # Random can't collude
                 if secondary_agent == 'RANDOM':
@@ -388,7 +386,7 @@ if __name__ == '__main__':
     '''
 
     # Set up testing functions with the number of games to play
-    number_of_games = 100
+    number_of_games = 1000
     tester = AgentTester(number_of_games)
 
     # Mission Outcomes holds the information relating to each mission
