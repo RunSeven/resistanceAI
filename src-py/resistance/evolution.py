@@ -10,7 +10,7 @@ from custom_games import AllocatedAgentsGame
 from genetics import AgentOriginator
 from assignment import AgentTester, SquadCreator
 
-from agent.bayesian_agent import BayesianAgent
+from agent.inference_agent import InferenceAgent
 from agent.deterministic_agent import DeterministicAgent
 
 class AgentWorld():
@@ -32,10 +32,10 @@ class AgentWorld():
             raise Exception("Invalid Player Range")
 
         while len(self.agents) < number_of_players:
-            self.agents[agent_generator.create(BayesianAgent)] = {'resistance': 0, 'spy': 0, 'spies_found': 0}
+            self.agents[agent_generator.create(InferenceAgent)] = {'resistance': 0, 'spy': 0, 'spies_found': 0}
     
     def training_ground(self, agent_count, agent_class, number_of_games=1000):
-        '''Train agent against Bayesian non-collusion'''
+        '''Train agent against InferenceAgent non-collusion'''
 
         wins = 0
         squad_creator = SquadCreator()

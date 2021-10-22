@@ -46,7 +46,7 @@ class DeterministicAgent(Agent):
     # Resistance Members to Frame
     target_resistance = None
 
-    def __init__(self, name='BayesianOpponentModelAgent_19800483', genetics=None, penalties=None):
+    def __init__(self, name='InferenceAgent', genetics=None, penalties=None):
         '''Assign Name and clear missions failed'''
 
         self.name = name

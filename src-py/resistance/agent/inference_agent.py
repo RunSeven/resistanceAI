@@ -18,7 +18,7 @@ from genetics import AgentPenalties, AgentPredisposition
 from agent import Agent
 
 
-class BayesianAgent(Agent):
+class InferenceAgent(Agent):
     '''Bayesian Opponent Model Agent
     '''
 
@@ -36,8 +36,7 @@ class BayesianAgent(Agent):
     current_round = None
     collusion = False
 
-    # Probabilities
-    genetics = None
+    # Probabilities    
     penalties = None
 
     # Resistance Members to Frame
@@ -296,7 +295,7 @@ class BayesianAgent(Agent):
                 continue
 
             if mission_success:
-                self._sucessful_mission_trust_adjustment(agent, mission, betrayals)
+                self._sucessful_mission_trust_adjustment(agent)
             else:
                 self._failed_mission_trust_adjustment(agent, mission, betrayals)
         
@@ -306,7 +305,7 @@ class BayesianAgent(Agent):
         else:
             self._resistance_mission_outcome(mission, betrayals)
 
-    def _sucessful_mission_trust_adjustment(self, agent, mission, betrayals):
+    def _sucessful_mission_trust_adjustment(self, agent):
         '''Trust players more on success'''
 
         # We use the agents existing probability of being 

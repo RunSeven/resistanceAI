@@ -18,7 +18,7 @@ from custom_games import AllocatedAgentsGame
 from agent import Agent
 from agent.random_agent import RandomAgent
 from agent.deterministic_agent import DeterministicAgent
-from agent.bayesian_agent import BayesianAgent
+from agent.inference_agent import InferenceAgent
 
 # Global Variables
 MISSION_SIZES = {
@@ -304,7 +304,7 @@ def summarise():
     agent_models = {
         "RANDOM": RandomAgent, 
         "DETERMINISTIC": DeterministicAgent, 
-        "BAYESIAN": BayesianAgent
+        "INFERENCE": InferenceAgent
         }
     
     n_player_outcomes = list()
@@ -386,7 +386,7 @@ if __name__ == '__main__':
     '''
 
     # Set up testing functions with the number of games to play
-    number_of_games = 1000
+    number_of_games = 10000
     tester = AgentTester(number_of_games)
 
     # Mission Outcomes holds the information relating to each mission
